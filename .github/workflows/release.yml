@@ -13,7 +13,7 @@ on:
 jobs:
   build:
     name: Build, Notarize & Publish
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 45
     steps:
       - name: Checkout
@@ -29,7 +29,7 @@ jobs:
           fi
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app
+        run: sudo xcode-select -s /Applications/Xcode.app && xcodebuild -version
 
       - name: Install xcodegen
         run: brew install xcodegen create-dmg
