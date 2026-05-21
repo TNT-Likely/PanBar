@@ -26,10 +26,16 @@ final class QuoteRefresher: ObservableObject {
     @Published private(set) var indexQuotes: [IndexQuote] = []
     @Published private(set) var lastError: String?
     @Published private(set) var lastUpdated: Date?
+    /// true 表示一次网络刷新正在进行中,UI 可以显示 spinner。
+    @Published private(set) var isRefreshing: Bool = false
+    /// snapshot/quotes 当前值的来源是否是磁盘缓存(尚未拿到任何成功的网络响应)。
+    /// UI 据此显示「显示的是上次的数据,正在更新...」提示。
+    @Published private(set) var snapshotIsFromCache: Bool = false
 
     private let service: PortfolioService
     private let indexService: IndexService
     private let clock: MarketClock
+    private let quoteCacheRepo: QuoteCacheRepository?
     private let alertEngine: AlertEngine?
     private var task: Task<Void, Never>?
     private var indexTask: Task<Void, Never>?
@@ -39,12 +45,43 @@ final class QuoteRefresher: ObservableObject {
     private var offline = false
     private var observers: [NSObjectProtocol] = []
 
-    init(service: PortfolioService, indexService: IndexService, clock: MarketClock, alertEngine: AlertEngine? = nil) {
+    init(
+        service: PortfolioService,
+        indexService: IndexService,
+        clock: MarketClock,
+        quoteCacheRepo: QuoteCacheRepository? = nil,
+        alertEngine: AlertEngine? = nil
+    ) {
         self.service = service
         self.indexService = indexService
         self.clock = clock
+        self.quoteCacheRepo = quoteCacheRepo
         self.alertEngine = alertEngine
+
+        // 同步从磁盘 seed quotes,这样 popover 一打开就有数据。
+        // 实际 snapshot 在 seedSnapshotFromCacheIfNeeded() 里异步算(需要 FX)。
+        if let cached = quoteCacheRepo?.loadAll(), !cached.isEmpty {
+            self.quotes = cached
+        }
+
         observeSystem()
+    }
+
+    /// 应用启动早期(在 FX warmup 之后)调一次,异步合成一个"基于磁盘缓存"的 snapshot,
+    /// 让 popover 第一次打开就有完整持仓 + 本位币换算。
+    /// 缓存为空时也会跑一次:持仓行会用 costPrice 作 fallback,至少行能展示出来。
+    /// 不阻塞 caller。
+    func seedSnapshotFromCacheIfNeeded() {
+        let cached = quotes
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            let snap = await self.service.computeSnapshot(usingCachedQuotes: cached)
+            // 只在还没有任何 fresh 数据时才覆盖(避免和 tick 抢)
+            guard self.lastUpdated == nil else { return }
+            self.snapshot = snap
+            // 只有真的有缓存数据时才打 "cached" 旗,空缓存就显示正常 loading
+            if !cached.isEmpty { self.snapshotIsFromCache = true }
+        }
     }
 
     func setOffline(_ value: Bool) {
@@ -160,10 +197,12 @@ final class QuoteRefresher: ObservableObject {
     }
 
     private func tick() async {
+        await MainActor.run { self.isRefreshing = true }
         do {
             let snap = try await service.computeSnapshot()
             await MainActor.run {
                 self.snapshot = snap
+                self.snapshotIsFromCache = false
                 if !snap.allQuotes.isEmpty {
                     // 包含持仓 + 自选所有 symbol 的最新行情
                     self.quotes.merge(snap.allQuotes) { _, new in new }
@@ -172,11 +211,16 @@ final class QuoteRefresher: ObservableObject {
                 self.lastError = nil
                 self.alertEngine?.evaluate(quotes: self.quotes)
             }
+            // 拉到了就异步写盘,下次冷启动可以秒读
+            if !snap.allQuotes.isEmpty {
+                quoteCacheRepo?.upsertMany(snap.allQuotes)
+            }
         } catch {
             await MainActor.run {
                 self.lastError = String(describing: error)
             }
             Log.quote.error("refresh failed: \(String(describing: error), privacy: .public)")
         }
+        await MainActor.run { self.isRefreshing = false }
     }
 }

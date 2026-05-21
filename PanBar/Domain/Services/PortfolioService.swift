@@ -26,7 +26,6 @@ actor PortfolioService {
     func computeSnapshot() async throws -> PortfolioSnapshot {
         let holdings = (try? holdingsRepo.all()) ?? []
         let watchlist = (try? watchlistRepo.all()) ?? []
-        let baseCurrency = settingsRepo.baseCurrency
 
         // 合并所有 SymbolID(持仓 + 自选),去重后一次拉取
         var allSymbols = Set<SymbolID>()
@@ -40,13 +39,24 @@ actor PortfolioService {
             quotes = (try? await provider.fetch(Array(allSymbols))) ?? [:]
         }
 
-        // 计算每只持仓
+        return await buildSnapshot(holdings: holdings, quotes: quotes)
+    }
+
+    /// 不走网络,只用调用方提供的行情(通常来自磁盘缓存)。
+    /// 用于 popover 首次打开的「秒出 + 后台刷新」场景。
+    func computeSnapshot(usingCachedQuotes cached: [SymbolID: Quote]) async -> PortfolioSnapshot {
+        let holdings = (try? holdingsRepo.all()) ?? []
+        return await buildSnapshot(holdings: holdings, quotes: cached)
+    }
+
+    private func buildSnapshot(holdings: [Holding], quotes: [SymbolID: Quote]) async -> PortfolioSnapshot {
+        let baseCurrency = settingsRepo.baseCurrency
+
         var positions: [HoldingPosition] = []
         var totalAssets: Decimal = 0
         var totalCost: Decimal = 0
         var todayPnL: Decimal = 0
         var allTimePnL: Decimal = 0
-        var hasAnyFX = true
 
         for h in holdings {
             let q = quotes[h.symbol]
@@ -79,13 +89,12 @@ actor PortfolioService {
                 basePnL: basePnL
             ))
 
-            if let bv = baseMarketValue { totalAssets += bv } else { hasAnyFX = false }
+            if let bv = baseMarketValue { totalAssets += bv }
             if let bc = baseCost { totalCost += bc }
             if let bt = baseTodayPnL { todayPnL += bt }
             if let bp = basePnL { allTimePnL += bp }
         }
 
-        _ = hasAnyFX // 当前没用到,占位避免警告
         let todayPnLPct: Double = {
             let base = totalAssets - todayPnL
             guard base > 0 else { return 0 }

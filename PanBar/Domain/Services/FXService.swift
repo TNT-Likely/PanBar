@@ -9,13 +9,37 @@ import Foundation
 ///   - USD→HKD = USDCNY / HKDCNY
 ///   - HKD→USD = HKDCNY / USDCNY
 actor FXService {
+    /// 自动刷新间隔(秒)。0 = 关闭自动刷新。
+    /// `Int` 而非 `TimeInterval` 是为了让 settings 序列化简单 + UI Picker 用整数。
+    static let intervalOff: Int = 0
+    static let defaultInterval: Int = 3600   // 1 小时
+
     private let provider: FXProvider
+    private let cacheRepo: FXCacheRepository?
     private var cache: [String: FXRate] = [:]
+    /// 内存命中的 TTL —— 用户读 rate 时,如果距上次成功拉取 < ttl 就直接复用,
+    /// 不阻塞 UI(磁盘缓存负责覆盖冷启动场景)。
     private let ttl: TimeInterval = 300
     private var lastFetch: Date = .distantPast
+    private var autoRefreshInterval: Int = defaultInterval
+    private var autoRefreshTask: Task<Void, Never>?
+    /// 缓存可观察的状态:供 UI 显示「最近更新时间」/「正在刷新」。
+    private(set) var isRefreshing: Bool = false
 
-    init(provider: FXProvider) {
+    init(provider: FXProvider, cacheRepo: FXCacheRepository? = nil) {
         self.provider = provider
+        self.cacheRepo = cacheRepo
+    }
+
+    /// 应用启动早期同步调用,从磁盘把上次保存的汇率灌进内存。
+    /// 这样后续任何 `rate()` 调用即使网络挂着也能立即返回值,popover 一打开就有本位币换算。
+    func seedFromDisk() {
+        guard let repo = cacheRepo else { return }
+        let disk = repo.loadAll()
+        guard !disk.isEmpty else { return }
+        cache = disk
+        // 注意:lastFetch 仍是 distantPast,下一次 refreshIfNeeded 还是会去拉最新值,
+        // 但用户看到的不再是空,只是「可能稍旧」。
     }
 
     /// 把 `value` 从 `from` 换算到 `to`。返回 nil 表示当前无法换算。
@@ -30,7 +54,12 @@ actor FXService {
         if from == to { return 1 }
         // 确保两个基础对已加载
         await refreshIfNeeded()
+        return rateLocked(from: from, to: to)
+    }
 
+    /// 内部计算汇率,不触发网络拉取(假定 cache 已就绪)。
+    private func rateLocked(from: Currency, to: Currency) -> Decimal? {
+        if from == to { return 1 }
         let usdcny = cache["USDCNY"]?.rate
         let hkdcny = cache["HKDCNY"]?.rate
 
@@ -49,20 +78,63 @@ actor FXService {
         }
     }
 
-    /// 预热(应用启动时调一次)。
+    /// 预热(应用启动时调一次)。先 seed 磁盘缓存,再异步拉新值。
     func warmup() async {
+        seedFromDisk()
         await refreshIfNeeded(force: true)
+        startAutoRefreshLoop()
+    }
+
+    /// 给 UI / 设置页用:返回所有已缓存的 pair → FXRate。
+    func snapshot() -> (rates: [String: FXRate], lastFetch: Date, isRefreshing: Bool) {
+        (cache, lastFetch, isRefreshing)
+    }
+
+    /// 用户在设置页点「立即刷新」。
+    /// 不管 TTL,强制走网络;失败时 cache 不被清掉,继续用旧值。
+    func forceRefresh() async {
+        await refreshIfNeeded(force: true)
+    }
+
+    /// 用户改了「自动刷新间隔」设置后调用。0 = 关。
+    func setAutoRefreshInterval(_ seconds: Int) {
+        autoRefreshInterval = max(0, seconds)
+        startAutoRefreshLoop()
+    }
+
+    private func startAutoRefreshLoop() {
+        autoRefreshTask?.cancel()
+        let interval = autoRefreshInterval
+        guard interval > 0 else { return }
+        autoRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(interval) * 1_000_000_000)
+                if Task.isCancelled { break }
+                await self?.refreshIfNeeded(force: true)
+            }
+        }
     }
 
     private func refreshIfNeeded(force: Bool = false) async {
         let stale = Date().timeIntervalSince(lastFetch) >= ttl
         if !force && !stale && !cache.isEmpty { return }
+        isRefreshing = true
+        defer { isRefreshing = false }
+
         let rates = (try? await provider.fetch(pairs: [(.usd, .cny), (.hkd, .cny)])) ?? []
+        guard !rates.isEmpty else { return }
+
+        var updated: [String: FXRate] = [:]
         for r in rates {
             // 用语义化 key 存(不依赖 enum rawValue 拼接)
-            if r.from == .usd, r.to == .cny { cache["USDCNY"] = r }
-            if r.from == .hkd, r.to == .cny { cache["HKDCNY"] = r }
+            if r.from == .usd, r.to == .cny { updated["USDCNY"] = r }
+            if r.from == .hkd, r.to == .cny { updated["HKDCNY"] = r }
         }
-        if !rates.isEmpty { lastFetch = Date() }
+        guard !updated.isEmpty else { return }
+
+        cache.merge(updated) { _, new in new }
+        lastFetch = Date()
+        // 落盘失败不影响内存值;下次有机会会再写回
+        try? cacheRepo?.upsertMany(updated)
     }
 }

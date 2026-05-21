@@ -76,6 +76,21 @@ enum Migrations {
             }
         }
 
+        // 行情磁盘缓存:首次打开 popover 时用,避免空列表等网络
+        migrator.registerMigration("v5_quote_cache") { db in
+            try db.create(table: "quoteCache") { t in
+                t.column("symbolKey", .text).primaryKey()    // SymbolID.storageKey
+                t.column("code", .text).notNull()
+                t.column("market", .text).notNull()
+                t.column("name", .text).notNull().defaults(to: "")
+                t.column("price", .text).notNull()           // Decimal
+                t.column("prevClose", .text).notNull()
+                t.column("currency", .text).notNull()
+                t.column("isClosed", .boolean).notNull().defaults(to: false)
+                t.column("asOf", .datetime).notNull()
+            }
+        }
+
         try migrator.migrate(dbPool)
     }
 }
