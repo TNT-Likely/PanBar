@@ -107,14 +107,15 @@ struct PopoverRoot: View {
                             .scaleEffect(0.55)
                             .frame(width: 12, height: 12)
                     } else {
-                        Image(systemName: "arrow.clockwise")
+                        Image(systemName: footerIcon)
+                            .foregroundColor(footerIconColor)
                     }
                     Text(footerStatus)
+                        .foregroundColor(.secondary)
                 }
                 .font(.system(size: 11))
             }
             .buttonStyle(.plain)
-            .foregroundColor(footerStatusColor)
             .disabled(refresher.isRefreshing)
 
             Spacer()
@@ -149,9 +150,19 @@ struct PopoverRoot: View {
         return L("footer.loading", comment: "")
     }
 
-    private var footerStatusColor: Color {
-        // cached 时给点黄色作弱提示,让用户知道这不是最新值
-        if refresher.snapshotIsFromCache { return .orange.opacity(0.85) }
+    /// 文字统一用 .secondary 灰色保证两个模式下都清晰可读,状态用图标颜色区分:
+    ///   - 离线:橙色 wifi.slash
+    ///   - cached:橙色 clock(让用户知道在看的不是最新值,但不刺眼)
+    ///   - 正常:灰色刷新箭头
+    private var footerIcon: String {
+        if refresher.lastError != nil { return "wifi.slash" }
+        if refresher.snapshotIsFromCache { return "clock.arrow.circlepath" }
+        return "arrow.clockwise"
+    }
+
+    private var footerIconColor: Color {
+        if refresher.lastError != nil { return .orange }
+        if refresher.snapshotIsFromCache { return .orange }
         return .secondary
     }
 
