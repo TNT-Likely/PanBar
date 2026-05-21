@@ -64,6 +64,7 @@ struct PopoverRoot: View {
     }
 
     /// 三个市场的实时状态:绿点=开盘 / 黄=午休 / 灰=休市
+    /// 末尾的 ? 图标:hover 出 tooltip 显示完整时段,点击跳设置 → 市场
     @ViewBuilder
     private var marketStatusRow: some View {
         if let clock = container?.clock {
@@ -82,8 +83,31 @@ struct PopoverRoot: View {
                             .foregroundColor(.secondary.opacity(0.8))
                     }
                 }
+                Button(action: openMarketSettings) {
+                    Image(systemName: "questionmark.circle")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+                .help(marketHoursTooltip)
             }
         }
+    }
+
+    private var marketHoursTooltip: String {
+        // 一行一个市场,SwiftUI tooltip 支持多行 \n
+        return [
+            L("market.hours.a", comment: ""),
+            L("market.hours.hk", comment: ""),
+            L("market.hours.us", comment: ""),
+            "",
+            L("market.tooltip.openSettings", comment: "")
+        ].joined(separator: "\n")
+    }
+
+    private func openMarketSettings() {
+        SettingsWindowController.preferredPane = .markets
+        SettingsWindowController.shared.show()
     }
 
     private func marketShortName(_ m: Market) -> String {

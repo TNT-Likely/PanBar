@@ -146,6 +146,12 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "休市" } }
       }
     },
+    "market.tooltip.openSettings" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Click to manage hours & overrides" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点击进入设置 → 市场" } }
+      }
+    },
     "settings.markets" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Markets" } },
