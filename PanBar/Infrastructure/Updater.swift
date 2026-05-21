@@ -31,8 +31,13 @@ final class Updater: NSObject, ObservableObject {
     }
 
     /// app 启动后台静默检查。有更新才弹窗,没更新或失败都安静。
+    /// Debug 构建跳过 —— 本地版本常常落后于 release tag,每次 make run 都弹很烦。
     func checkInBackground() {
+        #if DEBUG
+        return
+        #else
         checkForUpdates(silent: true)
+        #endif
     }
 
     private func checkForUpdates(silent: Bool) {
