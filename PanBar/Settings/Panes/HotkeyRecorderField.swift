@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Carbon
 
 /// SwiftUI 包裹的快捷键录入控件。点击进入"按下任意键"状态,捕获带修饰键的下一次按键。
 struct HotkeyRecorderField: View {
