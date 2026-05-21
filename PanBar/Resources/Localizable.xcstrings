@@ -152,6 +152,18 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点击进入设置 → 市场" } }
       }
     },
+    "footer.github.tooltip" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Source on GitHub" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "项目主页 (GitHub)" } }
+      }
+    },
+    "footer.donate.tooltip" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Buy me a coffee" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "捐赠支持开发" } }
+      }
+    },
     "settings.markets" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Markets" } },

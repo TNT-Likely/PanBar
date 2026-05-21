@@ -188,17 +188,40 @@ struct PopoverRoot: View {
             .disabled(refresher.isRefreshing)
 
             Spacer()
-            Text(AppVersion.displayShort)
-                .font(.system(size: 10))
-                .foregroundColor(.secondary.opacity(0.7))
-            Button(action: { NSApp.terminate(nil) }) {
-                Text(L("menu.quit", comment: ""))
-                    .font(.system(size: 11, weight: .medium))
+            Button(action: openGitHub) {
+                Image(systemName: "chevron.left.forwardslash.chevron.right")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
             }
             .buttonStyle(.plain)
+            .help(L("footer.github.tooltip", comment: ""))
+
+            Button(action: openDonate) {
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(.pink.opacity(0.85))
+            }
+            .buttonStyle(.plain)
+            .help(L("footer.donate.tooltip", comment: ""))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
+    }
+
+    private func openGitHub() {
+        if let url = URL(string: "https://github.com/TNT-Likely/PanBar") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func openDonate() {
+        let isChinese = Locale.preferredLanguages.first?.hasPrefix("zh") == true
+        let urlString = isChinese
+            ? "https://github.com/TNT-Likely/BeeCount/blob/main/docs/donate/README_ZH.md"
+            : "https://github.com/TNT-Likely/BeeCount/blob/main/docs/donate/README_EN.md"
+        if let url = URL(string: urlString) {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     private var footerStatus: String {
