@@ -6,18 +6,19 @@ import AppKit
 @MainActor
 final class QuoteRefresher: ObservableObject {
     enum Pace {
-        case popoverOpen   // 3s
-        case tickerOnly    // 5s
-        case marketClosed  // 60s
-        case sleeping      // 暂停
+        case popoverOpen   // 3s,用户正盯着,固定快
+        case tickerOnly    // 用户配置的间隔(默认 5s)
+        case sleeping      // 暂停(全市场休市 / 系统休眠 / 离线 都走这条)
+    }
 
-        var interval: TimeInterval {
-            switch self {
-            case .popoverOpen:  return 3
-            case .tickerOnly:   return 5
-            case .marketClosed: return 60
-            case .sleeping:     return .infinity
-            }
+    /// 用户在设置里改了「行情刷新间隔」时,更新这个值;runLoop 下次循环生效。
+    @Published var tickerInterval: TimeInterval = 5
+
+    private func interval(for pace: Pace) -> TimeInterval {
+        switch pace {
+        case .popoverOpen: return min(tickerInterval, 3)  // popover 开着至少 3s,不能更慢
+        case .tickerOnly:  return tickerInterval
+        case .sleeping:    return .infinity
         }
     }
 
@@ -149,12 +150,13 @@ final class QuoteRefresher: ObservableObject {
         let next: Pace
         if sleeping || offline {
             next = .sleeping
+        } else if !clock.anyOpen() {
+            // 全市场休市:完全暂停自动刷新,用户可点底部刷新按钮手动拉
+            next = .sleeping
         } else if popoverOpen {
             next = .popoverOpen
-        } else if clock.anyOpen() {
-            next = .tickerOnly
         } else {
-            next = .marketClosed
+            next = .tickerOnly
         }
         pace = next
     }
@@ -163,12 +165,13 @@ final class QuoteRefresher: ObservableObject {
         await tick()
         while !Task.isCancelled {
             recomputePace()
-            let interval = pace.interval
-            if interval.isInfinite {
+            let nextInterval = await MainActor.run { self.interval(for: self.pace) }
+            if nextInterval.isInfinite {
+                // .sleeping:每 5s 轮询一次 pace,等市场开 / 用户开 popover 时立刻醒
                 try? await Task.sleep(nanoseconds: 5_000_000_000)
                 continue
             }
-            try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+            try? await Task.sleep(nanoseconds: UInt64(nextInterval * 1_000_000_000))
             if Task.isCancelled { break }
             await tick()
         }

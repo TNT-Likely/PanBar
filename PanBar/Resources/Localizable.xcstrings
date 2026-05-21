@@ -128,6 +128,132 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在刷新…" } }
       }
     },
+    "market.status.open" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开盘" } }
+      }
+    },
+    "market.status.lunch" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lunch" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "午休" } }
+      }
+    },
+    "market.status.closed" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Closed" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "休市" } }
+      }
+    },
+    "settings.markets" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Markets" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "市场" } }
+      }
+    },
+    "market.refreshSection" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Refresh" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "刷新" } }
+      }
+    },
+    "market.quoteInterval" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Quote refresh interval" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "行情刷新间隔" } }
+      }
+    },
+    "market.quoteInterval.hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Used while markets are open. When the popover is showing, refresh stays at 3s. When every market is closed, auto-refresh pauses completely." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开盘期间用此间隔刷新。popover 打开时固定 3s,所有市场都休市时完全暂停自动刷新。" } }
+      }
+    },
+    "market.quoteInterval.3s" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Every 3 seconds (fast)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每 3 秒(快)" } }
+      }
+    },
+    "market.quoteInterval.5s" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Every 5 seconds (default)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每 5 秒(默认)" } }
+      }
+    },
+    "market.quoteInterval.10s" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Every 10 seconds" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每 10 秒" } }
+      }
+    },
+    "market.quoteInterval.30s" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Every 30 seconds" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每 30 秒" } }
+      }
+    },
+    "market.quoteInterval.60s" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Every minute (saves bandwidth)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每 1 分钟(省流量)" } }
+      }
+    },
+    "market.hoursSection" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Trading hours & overrides" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "交易时段 + 节假日纠错" } }
+      }
+    },
+    "market.hours.a" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "09:30–11:30, 13:00–15:00 Asia/Shanghai · Mon–Fri" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "09:30–11:30、13:00–15:00 北京时间 · 周一至周五" } }
+      }
+    },
+    "market.hours.hk" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "09:30–12:00, 13:00–16:00 Asia/Hong_Kong · Mon–Fri" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "09:30–12:00、13:00–16:00 香港时间 · 周一至周五" } }
+      }
+    },
+    "market.hours.us" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "09:30–16:00 America/New_York · Mon–Fri (no lunch break)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "09:30–16:00 纽约时间 · 周一至周五(无午休)" } }
+      }
+    },
+    "market.hours.hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Holiday detection isn't reliable (no free, accurate API). When PanBar gets it wrong on a holiday or special trading day, use the override below — it auto-clears at the next market-local midnight." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "节假日判断没有可靠的免费 API,可能出错。如果某天判断不对(节日开盘 / 工作日休市),用下面的「今天强制开/关」临时纠错,过了当地零点自动失效。" } }
+      }
+    },
+    "market.override.label" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Today" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今天" } }
+      }
+    },
+    "market.override.auto" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Auto (follow weekday rules)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "自动(按工作日规则)" } }
+      }
+    },
+    "market.override.forceOpen" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Force open today" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今天强制开盘" } }
+      }
+    },
+    "market.override.forceClosed" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Force closed today" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今天强制休市" } }
+      }
+    },
     "footer.cached" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Cached data, refreshing…" } },

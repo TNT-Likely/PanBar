@@ -3,6 +3,11 @@ import SwiftUI
 struct PopoverRoot: View {
     @EnvironmentObject var vm: PopoverViewModel
     @EnvironmentObject var refresher: QuoteRefresher
+    @Environment(\.container) private var container
+
+    /// 每 30 秒强制重算市场状态(开市/午休/休市切换);用 timer trigger 让 @State 变化触发重渲染
+    @State private var statusTick: Date = Date()
+    private let statusTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -16,6 +21,7 @@ struct PopoverRoot: View {
             Divider()
             footer
         }
+        .onReceive(statusTimer) { statusTick = $0 }
     }
 
     private var header: some View {
@@ -29,7 +35,7 @@ struct PopoverRoot: View {
                     .font(.system(size: 16, weight: .heavy, design: .rounded))
                     .foregroundColor(.white)
             }
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text("PanBar")
                         .font(.system(size: 14, weight: .semibold))
@@ -43,9 +49,7 @@ struct PopoverRoot: View {
                             .clipShape(Capsule())
                     }
                 }
-                Text(subtitle)
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondary)
+                marketStatusRow
             }
             Spacer()
             Button(action: openSettings) {
@@ -59,10 +63,51 @@ struct PopoverRoot: View {
         .padding(.bottom, 10)
     }
 
-    private var subtitle: String {
-        let m = String(format: L("popover.subtitle.markets", comment: "%d markets"), 3)
-        let h = String(format: L("popover.subtitle.holdings", comment: "%d holdings"), vm.holdings.count)
-        return "\(m) · \(h)"
+    /// 三个市场的实时状态:绿点=开盘 / 黄=午休 / 灰=休市
+    @ViewBuilder
+    private var marketStatusRow: some View {
+        if let clock = container?.clock {
+            HStack(spacing: 8) {
+                ForEach(Market.allCases, id: \.self) { market in
+                    let status = clock.status(market, at: statusTick)
+                    HStack(spacing: 3) {
+                        Circle()
+                            .fill(statusColor(status))
+                            .frame(width: 5, height: 5)
+                        Text(marketShortName(market))
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(.secondary)
+                        Text(statusLabel(status))
+                            .font(.system(size: 9))
+                            .foregroundColor(.secondary.opacity(0.8))
+                    }
+                }
+            }
+        }
+    }
+
+    private func marketShortName(_ m: Market) -> String {
+        switch m {
+        case .a: return "A"
+        case .hk: return "HK"
+        case .us: return "US"
+        }
+    }
+
+    private func statusColor(_ s: MarketStatus) -> Color {
+        switch s {
+        case .open: return .green
+        case .lunchBreak: return .yellow
+        case .closed: return .secondary.opacity(0.5)
+        }
+    }
+
+    private func statusLabel(_ s: MarketStatus) -> String {
+        switch s {
+        case .open:       return L("market.status.open", comment: "")
+        case .lunchBreak: return L("market.status.lunch", comment: "")
+        case .closed:     return L("market.status.closed", comment: "")
+        }
     }
 
     private var tabs: some View {
