@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct AboutPane: View {
+    @ObservedObject private var updater = Updater.shared
+
     var body: some View {
         VStack(spacing: 14) {
             ZStack {
@@ -19,9 +21,17 @@ struct AboutPane: View {
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 40)
-            Button(L("menu.checkForUpdates", comment: "")) {
-                Updater.shared.checkForUpdates()
+            Button(action: { updater.checkForUpdates() }) {
+                HStack(spacing: 6) {
+                    if updater.isChecking {
+                        ProgressView().controlSize(.small)
+                        Text(L("update.checking", comment: ""))
+                    } else {
+                        Text(L("menu.checkForUpdates", comment: ""))
+                    }
+                }
             }
+            .disabled(updater.isChecking)
             .padding(.top, 6)
             HStack(spacing: 16) {
                 Link("GitHub", destination: URL(string: "https://github.com/TNT-Likely/PanBar")!)

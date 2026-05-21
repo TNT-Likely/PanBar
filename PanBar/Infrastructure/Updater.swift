@@ -11,8 +11,11 @@ import AppKit
 /// 对小型开源 menubar app,这点收益不值得。直接比 GitHub Release tag,
 /// 用户点「下载」浏览器打开 release 页,自己拖一下就完事。
 @MainActor
-final class Updater: NSObject {
+final class Updater: NSObject, ObservableObject {
     static let shared = Updater()
+
+    /// 给 UI 用:正在请求 GitHub API 期间为 true,可以显示 spinner / 禁用按钮。
+    @Published private(set) var isChecking: Bool = false
 
     private let owner = "TNT-Likely"
     private let repo = "PanBar"
@@ -33,8 +36,13 @@ final class Updater: NSObject {
     }
 
     private func checkForUpdates(silent: Bool) {
+        guard !isChecking else { return }   // 防止快速重复点击
+        isChecking = true
         Task { [weak self] in
             guard let self = self else { return }
+            defer {
+                Task { @MainActor [weak self] in self?.isChecking = false }
+            }
             do {
                 let release = try await self.fetchLatestRelease()
                 await self.handleResult(release: release, silent: silent)
