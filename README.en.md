@@ -48,6 +48,16 @@ cd PanBar
 make run         # build & launch
 ```
 
+## 💝 Donate
+
+PanBar is fully free & open source — **no ads, no paid features**. If you find it useful, buy me a coffee ☕ to support ongoing development.
+
+[![PayPal](https://img.shields.io/badge/PayPal-Donate-0070BA?logo=paypal&logoColor=white&style=for-the-badge)](https://paypal.me/sunxiaoyes)
+
+Full options (Alipay / WeChat / USDT / Binance): **[💝 Donate page](https://github.com/TNT-Likely/BeeCount/blob/main/docs/donate/README_EN.md)**
+
+> The link reuses the donate page of [BeeCount](https://github.com/TNT-Likely/BeeCount) by the same author — all channels kept up to date.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
