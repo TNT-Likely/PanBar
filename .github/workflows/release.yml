@@ -10,6 +10,10 @@ on:
         description: Version (e.g. 0.1.0)
         required: true
 
+permissions:
+  # gh release create 需要写仓库内容
+  contents: write
+
 jobs:
   build:
     name: Build, Notarize & Publish
