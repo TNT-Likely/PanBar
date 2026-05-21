@@ -1,10 +1,20 @@
 import AppKit
 import SwiftUI
 
+/// 设置窗口的导航状态。用 ObservableObject 而不是 @State,是为了让 popover
+/// 后续多次发起「跳到某 pane」请求时,已存在的窗口能正确切过去 —— @State 初值
+/// 只算一次,旧 bug 就是这个。
+@MainActor
+final class SettingsNavigation: ObservableObject {
+    @Published var selectedPane: SettingsRootView.Pane = .general
+    @Published var pendingAction: SettingsWindowController.PendingAction?
+}
+
 @MainActor
 final class SettingsWindowController {
     static let shared = SettingsWindowController()
 
+    let navigation = SettingsNavigation()
     private var window: NSWindow?
 
     /// 由 popover 触发的"快速添加":打开设置 + 自动跳到目标 pane + 自动弹添加 sheet。
@@ -14,26 +24,48 @@ final class SettingsWindowController {
         case addWatch
         case addAlert
     }
-    static var pendingAction: PendingAction?
 
-    /// SettingsRootView 启动时读这个并设置 initial selected pane。
-    static var preferredPane: SettingsRootView.Pane?
+    /// 兼容旧 API:目标 pane 想用静态属性时仍可写,但 navigation.selectedPane 是真相源。
+    static var preferredPane: SettingsRootView.Pane? {
+        get { nil }
+        set {
+            if let pane = newValue {
+                shared.navigation.selectedPane = pane
+            }
+        }
+    }
+
+    /// 兼容旧 API:Pane 启动时读 pendingAction 并清空。
+    static var pendingAction: PendingAction? {
+        get { shared.navigation.pendingAction }
+        set { shared.navigation.pendingAction = newValue }
+    }
 
     private init() {}
 
     func show(initialAction: PendingAction? = nil) {
-        Self.pendingAction = initialAction
-        Self.preferredPane = switch initialAction {
-        case .addHolding: .portfolio
-        case .addWatch:   .watchlist
-        case .addAlert:   .alerts
-        case nil:         nil
+        navigation.pendingAction = initialAction
+        if let initialAction = initialAction {
+            navigation.selectedPane = pane(for: initialAction)
         }
         showWindow()
     }
 
     func show() {
         showWindow()
+    }
+
+    func show(pane: SettingsRootView.Pane) {
+        navigation.selectedPane = pane
+        showWindow()
+    }
+
+    private func pane(for action: PendingAction) -> SettingsRootView.Pane {
+        switch action {
+        case .addHolding: return .portfolio
+        case .addWatch:   return .watchlist
+        case .addAlert:   return .alerts
+        }
     }
 
     private func showWindow() {
@@ -45,6 +77,7 @@ final class SettingsWindowController {
         guard let container = DependencyContainer.shared else { return }
         let view = SettingsRootView()
             .environmentObject(container.refresher)
+            .environmentObject(navigation)
             .environment(\.container, container)
             .frame(minWidth: 600, minHeight: 480)
 
@@ -105,16 +138,16 @@ struct SettingsRootView: View {
         }
     }
 
-    @State private var selected: Pane = SettingsWindowController.preferredPane ?? .general
+    @EnvironmentObject private var navigation: SettingsNavigation
 
     var body: some View {
         NavigationSplitView {
-            List(Pane.allCases, selection: $selected) { pane in
+            List(Pane.allCases, selection: $navigation.selectedPane) { pane in
                 Label(pane.title, systemImage: pane.icon).tag(pane)
             }
             .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 200)
         } detail: {
-            switch selected {
+            switch navigation.selectedPane {
             case .general:     GeneralPane()
             case .ticker:      TickerPane()
             case .portfolio:   PortfolioPane()
@@ -125,9 +158,6 @@ struct SettingsRootView: View {
             case .markets:     MarketsPane()
             case .about:       AboutPane()
             }
-        }
-        .onAppear {
-            SettingsWindowController.preferredPane = nil
         }
     }
 }
