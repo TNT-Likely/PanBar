@@ -1,0 +1,73 @@
+name: PanBar
+options:
+  bundleIdPrefix: app.panbar
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+  defaultConfig: Debug
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    ENABLE_HARDENED_RUNTIME: YES
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+    PRODUCT_NAME: PanBar
+    INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 PanBar contributors"
+    COMBINE_HIDPI_IMAGES: YES
+    ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+
+packages:
+  GRDB:
+    url: https://github.com/groue/GRDB.swift
+    from: "6.29.0"
+
+targets:
+  PanBar:
+    type: application
+    platform: macOS
+    sources:
+      - path: PanBar
+        excludes:
+          - "**/.DS_Store"
+    resources:
+      - path: PanBar/Resources
+    info:
+      path: PanBar/Resources/Info.plist
+      properties:
+        LSUIElement: true
+        LSApplicationCategoryType: public.app-category.finance
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        CFBundleDisplayName: PanBar
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        CFBundleLocalizations:
+          - zh-Hans
+          - en
+        CFBundleDevelopmentRegion: zh-Hans
+    entitlements:
+      path: PanBar/Resources/PanBar.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+        com.apple.security.files.user-selected.read-write: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.panbar.PanBar
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_PREVIEWS: YES
+    dependencies:
+      - package: GRDB
+
+schemes:
+  PanBar:
+    build:
+      targets:
+        PanBar: all
+    run:
+      config: Debug
+    archive:
+      config: Release
