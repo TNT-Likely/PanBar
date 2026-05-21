@@ -6,7 +6,8 @@ struct WatchlistPane: View {
     @State private var showAdd: Bool = false
     @State private var editing: WatchItem?
     @State private var deleting: WatchItem?
-    @State private var selection: Set<WatchItem.ID> = []
+    @State private var selectedID: UUID?
+    @State private var dropTargetID: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -77,8 +78,8 @@ struct WatchlistPane: View {
         items = (try? container?.watchlistRepo.all()) ?? []
     }
 
-    /// 同 PortfolioPane:用 List 替代 Table 拿 .onMove 拖拽改顺序;伪表头对齐列宽,
-    /// 行首加三道杠作拖拽手柄。「在滚动条显示」开关已在 设置 → 滚动 里有,这里去掉。
+    /// 同 PortfolioPane:抛弃 List(macOS 上选中态 + onMove 互相打架),改用
+    /// ScrollView + LazyVStack 手撸 + .draggable/.dropDestination。
     private var watchlistList: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
@@ -92,19 +93,28 @@ struct WatchlistPane: View {
             .foregroundColor(.secondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
+            .background(Color.secondary.opacity(0.08))
 
-            List(selection: $selection) {
-                ForEach(items) { w in
-                    watchRow(w).tag(w.id)
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, w in
+                        watchRow(w, index: index, isAlternate: index.isMultiple(of: 2))
+                    }
                 }
-                .onMove(perform: move)
             }
-            .listStyle(.inset(alternatesRowBackgrounds: true))
+            .background(Color(NSColor.controlBackgroundColor))
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+            )
         }
     }
 
     @ViewBuilder
-    private func watchRow(_ w: WatchItem) -> some View {
+    private func watchRow(_ w: WatchItem, index: Int, isAlternate: Bool) -> some View {
+        let isSelected = selectedID == w.id
+        let isDropTarget = dropTargetID == w.id
+
         HStack(spacing: 8) {
             Image(systemName: "line.3.horizontal")
                 .font(.system(size: 11))
@@ -135,15 +145,50 @@ struct WatchlistPane: View {
             }
             .frame(width: 56)
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(rowBackground(isSelected: isSelected, isAlternate: isAlternate))
+        .overlay(alignment: .top) {
+            if isDropTarget {
+                Rectangle()
+                    .fill(Color.accentColor)
+                    .frame(height: 2)
+            }
+        }
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { editing = w }
+        .onTapGesture { selectedID = w.id }
+        .draggable(w.id.uuidString) {
+            HStack(spacing: 6) {
+                Image(systemName: "line.3.horizontal")
+                Text(w.name).bold()
+            }
+            .padding(8)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+        }
+        .dropDestination(for: String.self) { droppedIDs, _ in
+            handleDrop(droppedIDs: droppedIDs, ontoIndex: index)
+        } isTargeted: { hovering in
+            dropTargetID = hovering ? w.id : (dropTargetID == w.id ? nil : dropTargetID)
+        }
     }
 
-    private func move(from source: IndexSet, to destination: Int) {
-        items.move(fromOffsets: source, toOffset: destination)
+    private func rowBackground(isSelected: Bool, isAlternate: Bool) -> Color {
+        if isSelected { return Color.accentColor.opacity(0.20) }
+        return isAlternate ? Color.secondary.opacity(0.05) : Color.clear
+    }
+
+    private func handleDrop(droppedIDs: [String], ontoIndex target: Int) -> Bool {
+        guard let firstStr = droppedIDs.first,
+              let firstID = UUID(uuidString: firstStr),
+              let sourceIndex = items.firstIndex(where: { $0.id == firstID }),
+              sourceIndex != target else { return false }
+        let item = items.remove(at: sourceIndex)
+        let insertAt = sourceIndex < target ? target - 1 : target
+        items.insert(item, at: insertAt)
         let ids = items.map { $0.id }
         try? container?.watchlistRepo.reorder(ids: ids)
-        container?.refresher.refreshNow()
+        return true
     }
 
     private func exportCSV() {

@@ -5,8 +5,9 @@ struct PortfolioPane: View {
     @State private var holdings: [Holding] = []
     @State private var showAdd: Bool = false
     @State private var editing: Holding?
-    @State private var deleting: Holding?     // 二次确认前临时保存待删
-    @State private var selection: Set<Holding.ID> = []
+    @State private var deleting: Holding?
+    @State private var selectedID: UUID?
+    @State private var dropTargetID: UUID?    // 当前正在被拖入的行 id,用于画 drop indicator
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -87,13 +88,14 @@ struct PortfolioPane: View {
         holdings = (try? container?.holdingsRepo.all()) ?? []
     }
 
-    /// 用 List 替代 Table 是为了支持 .onMove 拖拽改顺序;Table 在 SwiftUI 里目前
-    /// 没有 onMove API。手撸列宽对齐成「类表格」外观:左侧三道杠作拖拽手柄。
-    /// 「在滚动条显示」的开关已经在 设置 → 滚动 那 pane 里有了,这里删掉省空间。
+    /// 之前用 SwiftUI List + .onMove + selection 在 macOS 反复踩 bug(选中不高亮、
+    /// 第二次拖不动)。改成 ScrollView + LazyVStack 手撸,行为完全自己控制。
+    /// 拖拽:.draggable(行 ID)+ .dropDestination(整行作为放置目标)。
+    /// 选中:单击置 selectedID,改背景色。
     private var holdingsList: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                Text("").frame(width: 18)  // 拖拽手柄列
+                Text("").frame(width: 18)
                 Text(L("col.symbol", comment: "")).frame(width: 70, alignment: .leading)
                 Text(L("col.name", comment: "")).frame(minWidth: 100, maxWidth: .infinity, alignment: .leading)
                 Text(L("col.market", comment: "")).frame(width: 56, alignment: .leading)
@@ -105,19 +107,28 @@ struct PortfolioPane: View {
             .foregroundColor(.secondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
+            .background(Color.secondary.opacity(0.08))
 
-            List(selection: $selection) {
-                ForEach(holdings) { h in
-                    holdingRow(h).tag(h.id)
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(Array(holdings.enumerated()), id: \.element.id) { index, h in
+                        holdingRow(h, index: index, isAlternate: index.isMultiple(of: 2))
+                    }
                 }
-                .onMove(perform: move)
             }
-            .listStyle(.inset(alternatesRowBackgrounds: true))
+            .background(Color(NSColor.controlBackgroundColor))
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+            )
         }
     }
 
     @ViewBuilder
-    private func holdingRow(_ h: Holding) -> some View {
+    private func holdingRow(_ h: Holding, index: Int, isAlternate: Bool) -> some View {
+        let isSelected = selectedID == h.id
+        let isDropTarget = dropTargetID == h.id
+
         HStack(spacing: 8) {
             Image(systemName: "line.3.horizontal")
                 .font(.system(size: 11))
@@ -155,15 +166,54 @@ struct PortfolioPane: View {
             }
             .frame(width: 56)
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(rowBackground(isSelected: isSelected, isAlternate: isAlternate))
+        .overlay(alignment: .top) {
+            if isDropTarget {
+                // 拖拽时在目标行顶部画一条蓝色横线作 drop indicator
+                Rectangle()
+                    .fill(Color.accentColor)
+                    .frame(height: 2)
+            }
+        }
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { editing = h }
+        .onTapGesture { selectedID = h.id }
+        .draggable(h.id.uuidString) {
+            // 拖拽时的预览(浮起来的那个小卡片)
+            HStack(spacing: 6) {
+                Image(systemName: "line.3.horizontal")
+                Text(h.name).bold()
+            }
+            .padding(8)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+        }
+        .dropDestination(for: String.self) { droppedIDs, _ in
+            handleDrop(droppedIDs: droppedIDs, ontoIndex: index)
+        } isTargeted: { hovering in
+            dropTargetID = hovering ? h.id : (dropTargetID == h.id ? nil : dropTargetID)
+        }
     }
 
-    private func move(from source: IndexSet, to destination: Int) {
-        holdings.move(fromOffsets: source, toOffset: destination)
+    private func rowBackground(isSelected: Bool, isAlternate: Bool) -> Color {
+        if isSelected { return Color.accentColor.opacity(0.20) }
+        return isAlternate ? Color.secondary.opacity(0.05) : Color.clear
+    }
+
+    /// 把 droppedIDs(UUID string)对应的行移到 ontoIndex 位置,持久化新 sortOrder。
+    private func handleDrop(droppedIDs: [String], ontoIndex target: Int) -> Bool {
+        guard let firstStr = droppedIDs.first,
+              let firstID = UUID(uuidString: firstStr),
+              let sourceIndex = holdings.firstIndex(where: { $0.id == firstID }),
+              sourceIndex != target else { return false }
+        let item = holdings.remove(at: sourceIndex)
+        // 移除后,target 索引可能因为前面少了一个元素需要回退一位
+        let insertAt = sourceIndex < target ? target - 1 : target
+        holdings.insert(item, at: insertAt)
         let ids = holdings.map { $0.id }
         try? container?.holdingsRepo.reorder(ids: ids)
-        container?.refresher.refreshNow()
+        return true
     }
 
     private func exportCSV() {
