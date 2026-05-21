@@ -81,13 +81,14 @@ final class StatusItemController {
         contextMenu.addItem(withTitle: L("menu.refresh", comment: ""), action: #selector(refresh), keyEquivalent: "r").target = self
         contextMenu.addItem(withTitle: L("menu.showPopover", comment: ""), action: #selector(showPopover), keyEquivalent: "p").target = self
         contextMenu.addItem(.separator())
-        // 隐私快捷开关:立即遮蔽 ticker
+        // 隐私快捷开关:立即遮蔽 ticker(⌘⇧⌥P 也能触发)
         let privacyItem = NSMenuItem(
             title: privacyHidden ? L("menu.privacy.show", comment: "") : L("menu.privacy.hideNow", comment: ""),
             action: #selector(togglePrivacy),
-            keyEquivalent: ""
+            keyEquivalent: "p"
         )
         privacyItem.target = self
+        privacyItem.keyEquivalentModifierMask = [.command, .shift, .option]
         contextMenu.addItem(privacyItem)
         contextMenu.addItem(.separator())
         contextMenu.addItem(withTitle: L("menu.settings", comment: ""), action: #selector(openSettings), keyEquivalent: ",").target = self
@@ -230,6 +231,11 @@ final class StatusItemController {
     /// 由全局快捷键调用。
     func toggleViaHotkey() {
         togglePopover()
+    }
+
+    /// 由全局快捷键 ⌘⇧⌥P 调用,切换隐私模式。
+    func togglePrivacyViaHotkey() {
+        togglePrivacy()
     }
 
     @objc private func refresh() {

@@ -19,9 +19,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func registerGlobalHotkeyIfEnabled(container: DependencyContainer) {
         let enabled = (container.settingsRepo.string(SettingsRepository.Keys.globalHotkeyEnabled) ?? "1") == "1"
         guard enabled else { return }
-        GlobalHotkey.shared.registerDefault { [weak self] in
-            self?.statusController?.toggleViaHotkey()
-        }
+        GlobalHotkey.shared.register(actions: [
+            .togglePopover: { [weak self] in self?.statusController?.toggleViaHotkey() },
+            .togglePrivacy: { [weak self] in self?.statusController?.togglePrivacyViaHotkey() }
+        ])
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {

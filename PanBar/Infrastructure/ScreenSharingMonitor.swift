@@ -163,7 +163,9 @@ final class ScreenSharingMonitor {
 
     private func diag(_ msg: String) {
         let line = "[\(Date())] Sharing: \(msg)\n"
-        let url = URL(fileURLWithPath: "/tmp/panbar-sharing.log")
+        // 同时三路输出:NSLog(走 Console.app)+ 文件(沙盒友好的 App Support 路径)
+        NSLog("PanBar.Sharing: %@", msg)
+        guard let url = Self.logURL else { return }
         if let data = line.data(using: .utf8) {
             if let handle = try? FileHandle(forWritingTo: url) {
                 _ = try? handle.seekToEnd()
@@ -174,4 +176,17 @@ final class ScreenSharingMonitor {
             }
         }
     }
+
+    /// 写到 App Support 目录(沙盒能写)。
+    private static let logURL: URL? = {
+        let fm = FileManager.default
+        guard let base = try? fm.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        ).appendingPathComponent("PanBar", isDirectory: true) else { return nil }
+        try? fm.createDirectory(at: base, withIntermediateDirectories: true)
+        return base.appendingPathComponent("sharing.log")
+    }()
 }
