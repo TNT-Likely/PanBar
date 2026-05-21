@@ -2,7 +2,7 @@ import Foundation
 
 /// 搜索结果的一条匹配。
 struct SymbolSearchResult: Identifiable, Equatable, Hashable, Sendable {
-    let id: String       // "a:600519"
+    let id: String
     let symbol: SymbolID
     let name: String
 
@@ -15,9 +15,25 @@ struct SymbolSearchResult: Identifiable, Equatable, Hashable, Sendable {
 
 /// 用腾讯 smartbox 做股票搜索(代码 / 名称 / 拼音)。
 /// 接口:`https://smartbox.gtimg.cn/s3/?v=2&q={query}&t=all&c=1`
-/// 返回(GBK):`v_hint="GZMT~sh600519~贵州茅台~...|...";`
+///
+/// 返回(GBK):
+///   `v_hint="us~aapl.oq~\u82f9\u679c~pg~GP^hk~00700~\u817e\u8baf\u63a7\u80a1~txkg~GP^...";`
+///
+/// 格式说明:
+///   - items 用 `^` 分隔
+///   - 每个 item 5 字段用 `~` 分隔:
+///       [0] market = sh / sz / hk / us
+///       [1] code   = 数字 / "aapl.oq"
+///       [2] name   = JSON \uXXXX 转义的中文
+///       [3] pinyin abbrev
+///       [4] type   = GP / GP-A(股票)/ ZS(指数)/ QZ(权证)/ JJ(基金)
+///
+///   - 空结果:`v_hint="N";`
 final class SymbolSearch: Sendable {
     let http: HTTPClient
+
+    /// 允许的类型(只显示股票)
+    private static let allowedTypes: Set<String> = ["GP", "GP-A", "GP-B"]
 
     init(http: HTTPClient = HTTPClient(defaultHeaders: ["Referer": "https://gu.qq.com/"])) {
         self.http = http
@@ -33,43 +49,68 @@ final class SymbolSearch: Sendable {
     }
 
     func parse(_ raw: String) -> [SymbolSearchResult] {
-        // raw: v_hint="...";  其中 "..." 可能是空,或者多条用 | 分隔
         guard let eqIdx = raw.firstIndex(of: "=") else { return [] }
         let after = raw[raw.index(after: eqIdx)...]
         let stripped = after.trimmingCharacters(in: CharacterSet(charactersIn: " ;\"\n\r"))
-        if stripped.isEmpty { return [] }
-        let items = stripped.split(separator: "|").map(String.init)
+        // 空结果用 "N" 标识
+        if stripped.isEmpty || stripped == "N" { return [] }
+
+        let items = stripped.split(separator: "^").map(String.init)
         var seen = Set<String>()
         var out: [SymbolSearchResult] = []
+
         for item in items {
             let fields = item.split(separator: "~", omittingEmptySubsequences: false).map(String.init)
-            guard fields.count >= 3 else { continue }
-            let fullCode = fields[1]
-            let name = fields[2].trimmingCharacters(in: .whitespaces)
-            guard let sid = decodeFullCode(fullCode) else { continue }
+            guard fields.count >= 5 else { continue }
+            let marketStr = fields[0]
+            let rawCode = fields[1]
+            let nameRaw = fields[2]
+            let type = fields[4]
+
+            guard Self.allowedTypes.contains(type) else { continue }
+            guard let sid = decodeSymbol(market: marketStr, rawCode: rawCode) else { continue }
             if !seen.insert(sid.storageKey).inserted { continue }
+
+            let name = decodeJSONString(nameRaw)
             out.append(SymbolSearchResult(symbol: sid, name: name.isEmpty ? sid.code : name))
-            if out.count >= 30 { break } // 上限
+            if out.count >= 30 { break }
         }
         return out
     }
 
-    private func decodeFullCode(_ s: String) -> SymbolID? {
-        let lower = s.lowercased()
-        if lower.hasPrefix("sh") || lower.hasPrefix("sz") {
-            return SymbolID(code: String(s.dropFirst(2)), market: .a)
-        }
-        if lower.hasPrefix("hk") {
-            return SymbolID(code: String(s.dropFirst(2)), market: .hk)
-        }
-        if lower.hasPrefix("us") {
-            // 腾讯 us 代码后可能跟 .OQ / .N 后缀,统一去掉
-            let body = String(s.dropFirst(2))
-            if let dot = body.firstIndex(of: ".") {
-                return SymbolID(code: String(body[..<dot]).uppercased(), market: .us)
+    private func decodeSymbol(market: String, rawCode: String) -> SymbolID? {
+        let m = market.lowercased()
+        let code = rawCode.trimmingCharacters(in: .whitespaces)
+        switch m {
+        case "sh", "sz":
+            return SymbolID(code: code, market: .a)
+        case "hk":
+            // HK 5 位数,前导补零(腾讯可能返回 "00700" 或 "700")
+            let padded = code.leftPadded(toLength: 5, withPad: "0")
+            return SymbolID(code: padded, market: .hk)
+        case "us":
+            // 去掉 .oq / .n / .ps 等后缀,转大写
+            let body: String
+            if let dot = code.firstIndex(of: ".") {
+                body = String(code[..<dot])
+            } else {
+                body = code
             }
             return SymbolID(code: body.uppercased(), market: .us)
+        default:
+            return nil
         }
-        return nil
+    }
+
+    /// 解码 JSON 风格的 \uXXXX 转义。
+    /// 包一层引号丢给 JSONDecoder 是最稳的做法。
+    private func decodeJSONString(_ s: String) -> String {
+        let escaped = s.replacingOccurrences(of: "\"", with: "\\\"")
+        let wrapped = "\"\(escaped)\""
+        guard let data = wrapped.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode(String.self, from: data) else {
+            return s
+        }
+        return decoded
     }
 }

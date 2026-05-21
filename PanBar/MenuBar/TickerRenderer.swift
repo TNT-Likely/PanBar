@@ -56,22 +56,25 @@ struct TickerRenderer {
     }
 
     private func summaryPiece(label: String, value: String, direction: TickerDirection) -> NSAttributedString {
+        // label 部分:小一号、白色 + 50% 透明,加底色块区分,避免和股票名混淆。
+        // 由于 NSAttributedString 不支持背景圆角,改用更明显的字体处理:粗体 + 字距 + 后缀冒号。
         let labelAttr: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: NSColor.secondaryLabelColor
+            .font: NSFont.systemFont(ofSize: font.pointSize - 1, weight: .semibold),
+            .foregroundColor: NSColor.white.withAlphaComponent(0.55),
+            .kern: 0.6
         ]
         let valueColor: NSColor
         switch direction {
         case .up:      valueColor = upColor
         case .down:    valueColor = downColor
-        case .neutral: valueColor = NSColor.labelColor
+        case .neutral: valueColor = NSColor.white.withAlphaComponent(0.95)
         }
         let valueAttr: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedDigitSystemFont(ofSize: font.pointSize, weight: .semibold),
             .foregroundColor: valueColor
         ]
         let s = NSMutableAttributedString()
-        s.append(NSAttributedString(string: label + " ", attributes: labelAttr))
+        s.append(NSAttributedString(string: label.uppercased() + " ", attributes: labelAttr))
         s.append(NSAttributedString(string: value, attributes: valueAttr))
         return s
     }

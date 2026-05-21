@@ -10,24 +10,41 @@ final class StatusItemController {
     private let refresher: QuoteRefresher
     private let prefs: TickerPreferences
     private let clock: MarketClock
+    private let settingsRepo: SettingsRepository
     private var renderer: TickerRenderer
     private var cancellables = Set<AnyCancellable>()
     private var contextMenu: NSMenu
+    private var screenSharingMonitor: ScreenSharingMonitor?
+    private var privacyHidden: Bool = false
 
     init(
         refresher: QuoteRefresher,
         popoverController: PopoverController,
         prefs: TickerPreferences,
-        clock: MarketClock
+        clock: MarketClock,
+        settingsRepo: SettingsRepository
     ) {
         self.refresher = refresher
         self.popoverController = popoverController
         self.prefs = prefs
         self.clock = clock
+        self.settingsRepo = settingsRepo
         self.renderer = TickerRenderer(scheme: prefs.colorScheme)
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         self.tickerView = TickerView(frame: NSRect(x: 0, y: 0, width: 320, height: 22))
         self.contextMenu = NSMenu()
+
+        // 屏幕共享检测
+        privacyHidden = settingsRepo.string(SettingsRepository.Keys.privacyManualHide) == "1"
+        let autoEnabled = settingsRepo.string(SettingsRepository.Keys.hideOnScreenShare) != "0"
+        if autoEnabled {
+            let monitor = ScreenSharingMonitor()
+            monitor.onChange = { [weak self] sharing in
+                self?.updateTickerVisibility(autoSharing: sharing)
+            }
+            monitor.start()
+            screenSharingMonitor = monitor
+        }
 
         configure()
         applyPrefs()
@@ -63,6 +80,15 @@ final class StatusItemController {
         contextMenu.removeAllItems()
         contextMenu.addItem(withTitle: L("menu.refresh", comment: ""), action: #selector(refresh), keyEquivalent: "r").target = self
         contextMenu.addItem(withTitle: L("menu.showPopover", comment: ""), action: #selector(showPopover), keyEquivalent: "p").target = self
+        contextMenu.addItem(.separator())
+        // 隐私快捷开关:立即遮蔽 ticker
+        let privacyItem = NSMenuItem(
+            title: privacyHidden ? L("menu.privacy.show", comment: "") : L("menu.privacy.hideNow", comment: ""),
+            action: #selector(togglePrivacy),
+            keyEquivalent: ""
+        )
+        privacyItem.target = self
+        contextMenu.addItem(privacyItem)
         contextMenu.addItem(.separator())
         contextMenu.addItem(withTitle: L("menu.settings", comment: ""), action: #selector(openSettings), keyEquivalent: ",").target = self
         contextMenu.addItem(withTitle: L("menu.checkForUpdates", comment: ""), action: #selector(checkForUpdates), keyEquivalent: "").target = self
@@ -196,6 +222,20 @@ final class StatusItemController {
 
     @objc private func checkForUpdates() {
         Updater.shared.checkForUpdates()
+    }
+
+    @objc private func togglePrivacy() {
+        privacyHidden.toggle()
+        try? settingsRepo.set(SettingsRepository.Keys.privacyManualHide, privacyHidden ? "1" : "0")
+        buildContextMenu()
+        updateTickerVisibility(autoSharing: screenSharingMonitor?.isSharing ?? false)
+    }
+
+    /// 综合手动 + 自动判断,决定 ticker 是显示还是显示为 "P •••" 占位。
+    private func updateTickerVisibility(autoSharing: Bool) {
+        let shouldHide = privacyHidden || autoSharing
+        tickerView.privacyHidden = shouldHide
+        tickerView.needsDisplay = true
     }
 
     @objc private func quit() {

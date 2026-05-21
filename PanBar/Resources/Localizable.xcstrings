@@ -614,6 +614,36 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无匹配结果" } }
       }
     },
+    "settings.privacySection" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Privacy" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "隐私" } }
+      }
+    },
+    "settings.hideOnScreenShare" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Auto-hide ticker during screen sharing" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "屏幕共享时自动隐藏滚动" } }
+      }
+    },
+    "settings.hideOnScreenShare.hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Heuristic detection: Zoom / Teams / Slack / Tencent Meeting / DingTalk / 飞书 / QuickTime recording, plus full-display capture." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "启发式识别:腾讯会议 / 钉钉 / 飞书 / Zoom / Teams / Slack / QuickTime 录屏 / 全屏捕获等场景下,ticker 自动遮蔽为 •••。" } }
+      }
+    },
+    "menu.privacy.hideNow" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hide ticker (privacy)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "隐藏滚动(隐私)" } }
+      }
+    },
+    "menu.privacy.show" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show ticker" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示滚动" } }
+      }
+    },
     "action.importCSV" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Import CSV" } },

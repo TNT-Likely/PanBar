@@ -104,11 +104,18 @@ private struct AlertEditorSheet: View {
     @State private var thresholdText: String = ""
     @State private var cooldownText: String = "300"
     @State private var error: String?
+    @StateObject private var searchVM = SymbolSearchViewModel()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(initial == nil ? L("alerts.addTitle", comment: "") : L("alerts.editTitle", comment: ""))
                 .font(.title3)
+
+            SymbolSearchField(vm: searchVM, onPick: { result in
+                market = result.symbol.market
+                code = result.symbol.code
+                name = result.name
+            })
 
             Form {
                 Picker(L("col.market", comment: ""), selection: $market) {
@@ -139,8 +146,11 @@ private struct AlertEditorSheet: View {
             }
         }
         .padding(24)
-        .frame(width: 460)
-        .onAppear(perform: prefill)
+        .frame(width: 480)
+        .onAppear {
+            prefill()
+            searchVM.bind(container?.symbolSearch)
+        }
     }
 
     private var thresholdLabel: String {

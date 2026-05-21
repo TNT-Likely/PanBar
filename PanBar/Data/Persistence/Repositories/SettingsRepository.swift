@@ -38,6 +38,8 @@ struct SettingsRepository {
         static let tickerShowTotalAssets = "ticker_show_total_assets"
         static let tickerShowTodayPnL = "ticker_show_today_pnl"
         static let tickerShowAllTimePnL = "ticker_show_alltime_pnl"
+        static let hideOnScreenShare = "hide_on_screen_share"
+        static let privacyManualHide = "privacy_manual_hide"
     }
 
     var baseCurrency: Currency {

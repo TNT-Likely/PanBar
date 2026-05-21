@@ -60,6 +60,7 @@ struct IndicesTab: View {
     private func startAutoRefresh() {
         refreshTask?.cancel()
         refreshTask = Task {
+            // 始终先立即拉一次
             await refresh()
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 5_000_000_000)
@@ -70,19 +71,28 @@ struct IndicesTab: View {
     }
 
     private func refresh() async {
-        guard let container = container else { return }
-        if loading { return }
+        guard let container = container else {
+            print("[IndicesTab] container is nil")
+            return
+        }
         await MainActor.run { loading = true; error = nil }
+        print("[IndicesTab] fetching…")
         do {
             let result = try await container.indexService.fetchAll()
+            print("[IndicesTab] got \(result.count) quotes")
             await MainActor.run {
                 self.quotes = result
                 self.loading = false
                 self.lastFetched = Date()
+                if result.isEmpty {
+                    self.error = "Empty response (parser matched 0 items)"
+                }
             }
         } catch {
+            let msg = "\(error)"
+            print("[IndicesTab] error: \(msg)")
             await MainActor.run {
-                self.error = "\(error)"
+                self.error = msg
                 self.loading = false
             }
         }

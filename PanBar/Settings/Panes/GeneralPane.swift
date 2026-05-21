@@ -22,6 +22,7 @@ private struct GeneralPaneContent: View {
     @State private var launchAtLogin: Bool = LaunchAtLoginService.isEnabled
     @State private var baseCurrency: Currency = .cny
     @State private var browserTemplate: String = BrowserURLBuilder.Template.xueqiu.rawValue
+    @State private var hideOnScreenShare: Bool = true
 
     var body: some View {
         Form {
@@ -64,12 +65,23 @@ private struct GeneralPaneContent: View {
                     try? container.settingsRepo.set(BrowserURLBuilder.templateKey, value)
                 }
             }
+
+            Section(header: Text(L("settings.privacySection", comment: "")).font(.headline)) {
+                Toggle(L("settings.hideOnScreenShare", comment: ""), isOn: $hideOnScreenShare)
+                    .onChange(of: hideOnScreenShare) { value in
+                        try? container.settingsRepo.set(SettingsRepository.Keys.hideOnScreenShare, value ? "1" : "0")
+                    }
+                Text(L("settings.hideOnScreenShare.hint", comment: ""))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
         .formStyle(.grouped)
         .padding(20)
         .onAppear {
             baseCurrency = container.settingsRepo.baseCurrency
             browserTemplate = container.settingsRepo.string(BrowserURLBuilder.templateKey) ?? BrowserURLBuilder.Template.xueqiu.rawValue
+            hideOnScreenShare = container.settingsRepo.string(SettingsRepository.Keys.hideOnScreenShare) != "0"
         }
     }
 }

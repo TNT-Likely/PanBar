@@ -18,6 +18,8 @@ final class TickerView: NSView {
     let iconWidth: CGFloat = 18
     /// 滚动文字可视区宽度(超出会被裁剪)。
     var visibleTextWidth: CGFloat = 280
+    /// 隐私模式:屏幕共享或用户手动开启时,只显示图标和 "•••",不绘制具体行情。
+    var privacyHidden: Bool = false
 
     /// 文字宽度(单条 attributed 的渲染宽度)。
     private var attributedWidth: CGFloat = 0
@@ -25,6 +27,12 @@ final class TickerView: NSView {
     private let loopGap: CGFloat = 24
 
     override var isFlipped: Bool { false }
+
+    /// 关键:关掉 vibrancy。
+    /// NSStatusBarButton 默认会把其子 view 的绘制结果套上 vibrancy 滤镜,
+    /// 导致红色文字在滚动到不同壁纸区域时被混色成橙色 / 粉色。
+    /// 这里强制返回 false,确保我们设定的 NSColor 1:1 渲染。
+    override var allowsVibrancy: Bool { false }
 
     var totalWidth: CGFloat {
         iconWidth + 6 + visibleTextWidth + 4
@@ -127,13 +135,28 @@ final class TickerView: NSView {
         // P 图标(左侧)
         drawIcon(in: NSRect(x: 2, y: (bounds.height - iconWidth) / 2, width: iconWidth, height: iconWidth))
 
-        // 文字区(右侧裁剪 + 滚动)
         let textRect = NSRect(
             x: iconWidth + 6,
             y: 0,
             width: visibleTextWidth,
             height: bounds.height
         )
+
+        // 隐私模式:不渲染数字,只展示一串占位符
+        if privacyHidden {
+            let dots = NSAttributedString(string: "•••", attributes: [
+                .font: NSFont.systemFont(ofSize: NSFont.menuBarFont(ofSize: 0).pointSize, weight: .semibold),
+                .foregroundColor: NSColor.secondaryLabelColor
+            ])
+            let size = dots.size()
+            let p = NSPoint(
+                x: textRect.minX + 4,
+                y: textRect.midY - size.height / 2
+            )
+            dots.draw(at: p)
+            return
+        }
+
         ctx?.saveGState()
         NSBezierPath(rect: textRect).addClip()
         let textY = (bounds.height - attributed.size().height) / 2
