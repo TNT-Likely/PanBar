@@ -41,7 +41,7 @@ struct TickerRenderer {
         let out = NSMutableAttributedString()
         let separatorAttr = NSAttributedString(string: "  ·  ", attributes: [
             .font: font,
-            .foregroundColor: NSColor.tertiaryLabelColor
+            .foregroundColor: NSColor.white.withAlphaComponent(0.45)
         ])
 
         for (i, item) in items.enumerated() {
@@ -107,17 +107,23 @@ struct TickerRenderer {
     }
 
     private func piece(for q: Quote) -> NSAttributedString {
+        // 关掉 vibrancy 之后,系统 secondaryLabelColor 会被原色渲染,在菜单栏深底上显得太灰。
+        // 改用固定白色不同 alpha,确保层级清晰:
+        //   - 代码:100% 白(主信息)
+        //   - 名称:80% 白(辅助识别)
+        //   - 价格:80% 白 + 等宽数字
+        //   - 涨跌:语义红/绿
         let symbolAttr: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: NSColor.labelColor
+            .foregroundColor: NSColor.white
         ]
         let nameAttr: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: NSColor.secondaryLabelColor
+            .foregroundColor: NSColor.white.withAlphaComponent(0.80)
         ]
         let valueAttr: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedDigitSystemFont(ofSize: font.pointSize, weight: .regular),
-            .foregroundColor: NSColor.secondaryLabelColor
+            .foregroundColor: NSColor.white.withAlphaComponent(0.80)
         ]
         let pctColor = q.change >= 0 ? upColor : downColor
         let pctAttr: [NSAttributedString.Key: Any] = [
