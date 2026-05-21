@@ -34,6 +34,9 @@ final class StatusItemController {
         self.settingsRepo = settingsRepo
         self.renderer = TickerRenderer(scheme: prefs.colorScheme)
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        // autosaveName 让 macOS 持久化用户 ⌘-拖到的位置,下次启动不重置。
+        // 这是「被刘海挡掉」时唯一能做的:用户挪到 notch 左边后位置就保住了。
+        self.statusItem.autosaveName = "app.panbar.PanBar.statusItem"
         self.currentMode = prefs.displayMode
         self.tickerView = Self.makeView(for: prefs.displayMode, scheme: prefs.colorScheme)
         self.contextMenu = NSMenu()
