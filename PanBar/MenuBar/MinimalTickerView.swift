@@ -102,7 +102,7 @@ final class MinimalTickerView: NSView {
         } else {
             sign = c.value < 0 ? "-" : "+"
         }
-        let text = arrow + sign + c.currency.symbol + NumberAbbreviation.format(c.value)
+        let text = arrow + sign + c.currency.symbol + NumberAbbreviation.format(c.value, currency: c.currency)
         let s = NSMutableAttributedString()
         s.append(NSAttributedString(string: c.label + " ", attributes: labelAttr))
         s.append(NSAttributedString(string: text, attributes: valueAttr))

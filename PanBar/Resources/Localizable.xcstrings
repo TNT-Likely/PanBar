@@ -490,8 +490,8 @@
     },
     "ticker.summarySection" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Summary in Ticker" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "滚动条 · 汇总指标" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Summary metrics" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "汇总指标" } }
       }
     },
     "ticker.showTodayPnL" : {
@@ -514,8 +514,8 @@
     },
     "ticker.summaryHint" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Summary items appear at the start of the scroller, always shown regardless of \"Max items\"." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "汇总项显示在滚动条最前方,不受\"最多展示数\"限制。" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Applies to all display modes (scroll / carousel / fixed). Fixed mode shows only these, no individual quotes." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "对全部展现形式生效(滚动 / 轮播 / 固定)。固定模式只显示这几项,不展示个股。" } }
       }
     },
     "ticker.itemsHint.title" : {

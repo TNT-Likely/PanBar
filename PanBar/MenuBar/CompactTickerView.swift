@@ -124,7 +124,7 @@ final class CompactTickerView: NSView {
             text = NumberAbbreviation.formatCurrency(value, currency: slots.baseCurrency)
         } else {
             let sign = value < 0 ? "-" : "+"
-            text = sign + slots.baseCurrency.symbol + NumberAbbreviation.format(value)
+            text = sign + slots.baseCurrency.symbol + NumberAbbreviation.format(value, currency: slots.baseCurrency)
         }
         s.append(NSAttributedString(string: text, attributes: valueAttr))
         return s

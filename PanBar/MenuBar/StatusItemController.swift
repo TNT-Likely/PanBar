@@ -143,10 +143,11 @@ final class StatusItemController {
         case .compact:
             guard let view = tickerView as? CompactTickerView else { return }
             let snap = refresher.snapshot
+            // 三个汇总开关同样适用于 compact —— 用户只想看其中一两个时,菜单栏更窄
             view.update(slots: CompactTickerView.Slots(
-                todayPnL: snap.todayPnL,
-                allTimePnL: snap.allTimePnL,
-                totalAssets: snap.totalAssets,
+                todayPnL: prefs.showTodayPnL ? snap.todayPnL : nil,
+                allTimePnL: prefs.showAllTimePnL ? snap.allTimePnL : nil,
+                totalAssets: prefs.showTotalAssets ? snap.totalAssets : nil,
                 baseCurrency: snap.baseCurrency
             ))
         case .minimal:
