@@ -94,9 +94,9 @@ build/sparkle-tools/bin/generate_appcast build/
 # → 把生成的 build/appcast.xml 拷到 docs/ 提交 push
 
 # 7) 创建 tag 与 GitHub Release
-git tag v$VERSION
-git push origin v$VERSION
-gh release create v$VERSION \
+git tag $VERSION
+git push origin $VERSION
+gh release create $VERSION \
   --title "PanBar $VERSION" \
   --generate-notes \
   build/PanBar-$VERSION.dmg \
@@ -108,8 +108,8 @@ gh release create v$VERSION \
 把代码 push 到 `main`,然后:
 
 ```bash
-git tag v0.2.0
-git push origin v0.2.0
+git tag 0.2.0
+git push origin 0.2.0
 ```
 
 GitHub Actions `.github/workflows/release.yml` 会自动:
