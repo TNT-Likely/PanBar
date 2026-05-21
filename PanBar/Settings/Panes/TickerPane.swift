@@ -22,11 +22,6 @@ private struct TickerPaneContent: View {
     var body: some View {
         Form {
             Section(header: Text(L("settings.ticker", comment: "")).font(.title3)) {
-                Picker(L("settings.colorScheme", comment: ""), selection: $prefs.colorScheme) {
-                    Text(L("scheme.east", comment: "")).tag(TickerColorScheme.east)
-                    Text(L("scheme.west", comment: "")).tag(TickerColorScheme.west)
-                    Text(L("scheme.mono", comment: "")).tag(TickerColorScheme.mono)
-                }
                 Picker(L("settings.scrollSpeed", comment: ""), selection: $prefs.scrollSpeed) {
                     ForEach(ScrollSpeed.allCases) { s in
                         Text(s.displayName).tag(s)

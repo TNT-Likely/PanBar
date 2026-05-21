@@ -7,7 +7,8 @@ struct GeneralPane: View {
         if let container = container {
             GeneralPaneContent(
                 container: container,
-                appearance: container.appearancePrefs
+                appearance: container.appearancePrefs,
+                prefs: container.tickerPrefs
             )
         } else {
             Text(L("loading", comment: ""))
@@ -18,6 +19,7 @@ struct GeneralPane: View {
 private struct GeneralPaneContent: View {
     let container: DependencyContainer
     @ObservedObject var appearance: AppearancePreferences
+    @ObservedObject var prefs: TickerPreferences
 
     @State private var launchAtLogin: Bool = LaunchAtLoginService.isEnabled
     @State private var baseCurrency: Currency = .cny
@@ -77,6 +79,12 @@ private struct GeneralPaneContent: View {
                     ForEach(PopoverDensity.allCases) { d in
                         Text(d.displayName).tag(d)
                     }
+                }
+
+                Picker(L("settings.colorScheme", comment: ""), selection: $prefs.colorScheme) {
+                    Text(L("scheme.east", comment: "")).tag(TickerColorScheme.east)
+                    Text(L("scheme.west", comment: "")).tag(TickerColorScheme.west)
+                    Text(L("scheme.mono", comment: "")).tag(TickerColorScheme.mono)
                 }
 
                 Picker(L("settings.browser", comment: ""), selection: $browserTemplate) {
