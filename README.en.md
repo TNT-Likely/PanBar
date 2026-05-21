@@ -35,7 +35,11 @@ PanBar squeezes A-share / HK / US quotes into a tiny scrolling strip in the macO
 
 ## Install
 
-> **Signed releases are still on the way** (requires Apple Developer ID notarization). For now, build from source:
+**Download the DMG** (Apple Developer ID notarized — Gatekeeper passes after a one-time "verified" prompt):
+
+[**↓ Latest release**](https://github.com/TNT-Likely/PanBar/releases/latest) → double-click the `.dmg` → drag PanBar into Applications.
+
+Or build from source:
 
 ```bash
 brew install xcodegen create-dmg
