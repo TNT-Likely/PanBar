@@ -5,9 +5,10 @@ struct HoldingsTab: View {
     @EnvironmentObject var refresher: QuoteRefresher
     @EnvironmentObject var appearance: AppearancePreferences
     @EnvironmentObject var prefs: TickerPreferences
+    /// 当前 hover 的行 id;有值时该行尾露出铅笔编辑按钮。
+    @State private var hoveredID: UUID?
 
     /// 把 snapshot.positions 按 holding.id 建索引,O(1) 查找。
-    /// snapshot 还没合成时(冷启动一瞬间)返回空,行会用 fallback 渲染。
     private var positionsByID: [UUID: HoldingPosition] {
         Dictionary(uniqueKeysWithValues: refresher.snapshot.positions.map { ($0.holding.id, $0) })
     }
@@ -19,30 +20,52 @@ struct HoldingsTab: View {
                     if vm.holdings.isEmpty {
                         emptyState
                     } else {
-                        // 列表来源是 vm.holdings(DB 同步可读),不依赖 snapshot 的合成进度。
-                        // 价格直接从 refresher.quotes 取(QuoteRefresher.init 同步从磁盘 seed),
-                        // 盈亏 / 本位币换算从 snapshot 取(异步合成完才有)。
                         ForEach(vm.holdings) { holding in
-                            HoldingRow(
-                                holding: holding,
-                                quote: refresher.quotes[holding.symbol],
-                                position: positionsByID[holding.id],
-                                density: appearance.density,
-                                scheme: prefs.colorScheme,
-                                baseCurrency: refresher.snapshot.baseCurrency
-                            )
-                                .contextMenu {
-                                    Button(L("action.openInBrowser", comment: "")) {
-                                        openInBrowser(holding.symbol)
+                            ZStack(alignment: .trailing) {
+                                HoldingRow(
+                                    holding: holding,
+                                    quote: refresher.quotes[holding.symbol],
+                                    position: positionsByID[holding.id],
+                                    density: appearance.density,
+                                    scheme: prefs.colorScheme,
+                                    baseCurrency: refresher.snapshot.baseCurrency
+                                )
+                                // hover 浮出的铅笔编辑按钮(只对持仓有,自选 / 大盘不需要编辑)
+                                if hoveredID == holding.id {
+                                    Button(action: { openEdit(holding) }) {
+                                        Image(systemName: "pencil.circle.fill")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(.accentColor)
+                                            .padding(4)
+                                            .background(
+                                                Circle().fill(.regularMaterial).shadow(radius: 1)
+                                            )
                                     }
-                                    Divider()
-                                    Button(L("action.delete", comment: ""), role: .destructive) {
-                                        vm.deleteHolding(holding.id)
-                                    }
+                                    .buttonStyle(.plain)
+                                    .padding(.trailing, 6)
+                                    .help(L("action.edit", comment: ""))
+                                    .transition(.opacity.combined(with: .scale))
                                 }
-                                .onTapGesture(count: 2) {
+                            }
+                            .contentShape(Rectangle())
+                            .onHover { hovering in
+                                withAnimation(.easeInOut(duration: 0.12)) {
+                                    hoveredID = hovering ? holding.id : (hoveredID == holding.id ? nil : hoveredID)
+                                }
+                            }
+                            .contextMenu {
+                                Button(L("action.edit", comment: "")) { openEdit(holding) }
+                                Button(L("action.openInBrowser", comment: "")) {
                                     openInBrowser(holding.symbol)
                                 }
+                                Divider()
+                                Button(L("action.delete", comment: ""), role: .destructive) {
+                                    vm.deleteHolding(holding.id)
+                                }
+                            }
+                            .onTapGesture(count: 2) {
+                                openInBrowser(holding.symbol)
+                            }
                             Divider().opacity(0.4)
                         }
                     }
@@ -50,11 +73,14 @@ struct HoldingsTab: View {
             }
             .frame(maxHeight: 290)
 
-            // 底部快捷"+ 添加"行
             if !vm.holdings.isEmpty {
                 quickAddButton
             }
         }
+    }
+
+    private func openEdit(_ holding: Holding) {
+        SettingsWindowController.shared.show(initialAction: .editHolding(holding.id))
     }
 
     private var quickAddButton: some View {

@@ -17,12 +17,13 @@ final class SettingsWindowController {
     let navigation = SettingsNavigation()
     private var window: NSWindow?
 
-    /// 由 popover 触发的"快速添加":打开设置 + 自动跳到目标 pane + 自动弹添加 sheet。
+    /// 由 popover 触发的"快速添加 / 编辑":打开设置 + 自动跳到目标 pane + 自动弹对应 sheet。
     /// PortfolioPane / WatchlistPane / AlertsPane 启动时会读这个标记并消费。
-    enum PendingAction {
+    enum PendingAction: Equatable {
         case addHolding
         case addWatch
         case addAlert
+        case editHolding(UUID)
     }
 
     /// 兼容旧 API:目标 pane 想用静态属性时仍可写,但 navigation.selectedPane 是真相源。
@@ -62,9 +63,9 @@ final class SettingsWindowController {
 
     private func pane(for action: PendingAction) -> SettingsRootView.Pane {
         switch action {
-        case .addHolding: return .portfolio
-        case .addWatch:   return .watchlist
-        case .addAlert:   return .alerts
+        case .addHolding, .editHolding: return .portfolio
+        case .addWatch:                 return .watchlist
+        case .addAlert:                 return .alerts
         }
     }
 

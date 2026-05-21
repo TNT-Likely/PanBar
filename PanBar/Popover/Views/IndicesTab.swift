@@ -3,6 +3,7 @@ import SwiftUI
 struct IndicesTab: View {
     @EnvironmentObject var refresher: QuoteRefresher
     @EnvironmentObject var prefs: TickerPreferences
+    @EnvironmentObject var vm: PopoverViewModel   // 拿 settingsRepo 读浏览器模板
 
     var body: some View {
         ScrollView {
@@ -12,12 +13,27 @@ struct IndicesTab: View {
                 } else {
                     ForEach(refresher.indexQuotes) { q in
                         IndexRow(quote: q, scheme: prefs.colorScheme)
+                            .contextMenu {
+                                Button(L("action.openInBrowser", comment: "")) {
+                                    openInBrowser(q.descriptor)
+                                }
+                            }
+                            .onTapGesture(count: 2) {
+                                openInBrowser(q.descriptor)
+                            }
                         Divider().opacity(0.4)
                     }
                 }
             }
         }
         .frame(maxHeight: 320)
+    }
+
+    private func openInBrowser(_ index: IndexDescriptor) {
+        let template = vm.settingsRepo.string(BrowserURLBuilder.templateKey) ?? BrowserURLBuilder.Template.xueqiu.rawValue
+        if let url = BrowserURLBuilder.url(template: template, index: index) {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     private var emptyState: some View {

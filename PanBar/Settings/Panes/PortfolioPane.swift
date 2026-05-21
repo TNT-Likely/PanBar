@@ -95,9 +95,17 @@ struct PortfolioPane: View {
         .padding(20)
         .onAppear {
             reload()
-            if SettingsWindowController.pendingAction == .addHolding {
+            switch SettingsWindowController.pendingAction {
+            case .addHolding:
                 SettingsWindowController.pendingAction = nil
                 showAdd = true
+            case .editHolding(let id):
+                SettingsWindowController.pendingAction = nil
+                if let h = holdings.first(where: { $0.id == id }) {
+                    editing = h
+                }
+            default:
+                break
             }
         }
         .sheet(isPresented: $showAdd) {

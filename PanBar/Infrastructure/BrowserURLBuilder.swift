@@ -28,6 +28,54 @@ enum BrowserURLBuilder {
         }
     }
 
+    /// 大盘指数的浏览器 URL。code 空间和股票冲突(000001 是上证指数也是平安银行),
+    /// 所以按 IndexDescriptor.id 单独维护映射。
+    static func url(template: String, index: IndexDescriptor) -> URL? {
+        let key = Template(rawValue: template) ?? .xueqiu
+        switch key {
+        case .xueqiu:
+            switch index.id {
+            case "SH000001": return URL(string: "https://xueqiu.com/S/SH000001")
+            case "SZ399001": return URL(string: "https://xueqiu.com/S/SZ399001")
+            case "SZ399006": return URL(string: "https://xueqiu.com/S/SZ399006")
+            case "SH000300": return URL(string: "https://xueqiu.com/S/SH000300")
+            case "HSI":      return URL(string: "https://xueqiu.com/S/HKHSI")
+            case "DJIA":     return URL(string: "https://xueqiu.com/S/.DJI")
+            case "NDX":      return URL(string: "https://xueqiu.com/S/.IXIC")
+            case "SPX":      return URL(string: "https://xueqiu.com/S/.INX")
+            default: return nil
+            }
+        case .yahoo:
+            let sym: String
+            switch index.id {
+            case "SH000001": sym = "000001.SS"
+            case "SZ399001": sym = "399001.SZ"
+            case "SZ399006": sym = "399006.SZ"
+            case "SH000300": sym = "000300.SS"
+            case "HSI":      sym = "%5EHSI"
+            case "DJIA":     sym = "%5EDJI"
+            case "NDX":      sym = "%5ENDX"
+            case "SPX":      sym = "%5EGSPC"
+            default: return nil
+            }
+            return URL(string: "https://finance.yahoo.com/quote/\(sym)")
+        case .tradingview:
+            let path: String
+            switch index.id {
+            case "SH000001": path = "SSE-000001"
+            case "SZ399001": path = "SZSE-399001"
+            case "SZ399006": path = "SZSE-399006"
+            case "SH000300": path = "SSE-000300"
+            case "HSI":      path = "HSI-HSI"
+            case "DJIA":     path = "DJ-DJI"
+            case "NDX":      path = "NASDAQ-NDX"
+            case "SPX":      path = "SP-SPX"
+            default: return nil
+            }
+            return URL(string: "https://www.tradingview.com/symbols/\(path)/")
+        }
+    }
+
     private static func xueqiu(_ s: SymbolID) -> URL? {
         let code: String
         switch s.market {
