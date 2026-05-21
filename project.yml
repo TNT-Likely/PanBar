@@ -23,6 +23,9 @@ packages:
   GRDB:
     url: https://github.com/groue/GRDB.swift
     from: "6.29.0"
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.6.0"
 
 targets:
   PanBar:
@@ -48,6 +51,10 @@ targets:
           - zh-Hans
           - en
         CFBundleDevelopmentRegion: zh-Hans
+        SUFeedURL: https://tnt-likely.github.io/PanBar/appcast.xml
+        SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 86400
+        SUPublicEDKey: ""
     entitlements:
       path: PanBar/Resources/PanBar.entitlements
       properties:
@@ -61,6 +68,7 @@ targets:
         ENABLE_PREVIEWS: YES
     dependencies:
       - package: GRDB
+      - package: Sparkle
 
 schemes:
   PanBar:

@@ -65,6 +65,7 @@ final class StatusItemController {
         contextMenu.addItem(withTitle: L("menu.showPopover", comment: ""), action: #selector(showPopover), keyEquivalent: "p").target = self
         contextMenu.addItem(.separator())
         contextMenu.addItem(withTitle: L("menu.settings", comment: ""), action: #selector(openSettings), keyEquivalent: ",").target = self
+        contextMenu.addItem(withTitle: L("menu.checkForUpdates", comment: ""), action: #selector(checkForUpdates), keyEquivalent: "").target = self
         contextMenu.addItem(.separator())
         contextMenu.addItem(withTitle: L("menu.quit", comment: ""), action: #selector(quit), keyEquivalent: "q").target = self
     }
@@ -154,6 +155,10 @@ final class StatusItemController {
 
     @objc private func openSettings() {
         SettingsWindowController.shared.show()
+    }
+
+    @objc private func checkForUpdates() {
+        Updater.shared.checkForUpdates()
     }
 
     @objc private func quit() {

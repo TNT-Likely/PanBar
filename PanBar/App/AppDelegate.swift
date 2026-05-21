@@ -58,6 +58,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 全局快捷键 ⌘⇧P
             registerGlobalHotkeyIfEnabled(container: container)
 
+            // Sparkle 自动更新(Release 配置才启动定时检查)
+            _ = Updater.shared
+
             Task {
                 await container.warmup()
                 container.refresher.refreshNow()

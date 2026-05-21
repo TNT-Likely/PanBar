@@ -1,0 +1,143 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version (e.g. 0.1.0)
+        required: true
+
+jobs:
+  build:
+    name: Build, Notarize & Publish
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app
+
+      - name: Install xcodegen
+        run: brew install xcodegen create-dmg
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Import signing certificate
+        env:
+          CERT_P12_BASE64: ${{ secrets.MAC_DEVELOPER_ID_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.MAC_DEVELOPER_ID_P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.MAC_KEYCHAIN_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          echo "$CERT_P12_BASE64" | base64 --decode > $RUNNER_TEMP/cert.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import $RUNNER_TEMP/cert.p12 \
+            -P "$CERT_PASSWORD" \
+            -A -t cert -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+      - name: Archive & export
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          mkdir -p build/Release
+          xcodebuild \
+            -project PanBar.xcodeproj \
+            -scheme PanBar \
+            -configuration Release \
+            -archivePath build/PanBar.xcarchive \
+            MARKETING_VERSION=$VERSION \
+            CURRENT_PROJECT_VERSION=$(date +%s) \
+            archive
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/PanBar.xcarchive \
+            -exportOptionsPlist scripts/export-options.plist \
+            -exportPath build/Release
+
+      - name: Notarize & staple
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          cd build/Release
+          ditto -c -k --keepParent --sequesterRsrc PanBar.app ../PanBar-$VERSION.zip
+          cd ../..
+          xcrun notarytool submit build/PanBar-$VERSION.zip \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --team-id "$TEAM_ID" \
+            --wait
+          xcrun stapler staple build/Release/PanBar.app
+          xcrun stapler validate build/Release/PanBar.app
+
+      - name: Package DMG
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          create-dmg \
+            --volname "PanBar $VERSION" \
+            --window-pos 200 120 \
+            --window-size 540 380 \
+            --icon-size 100 \
+            --icon "PanBar.app" 140 190 \
+            --app-drop-link 400 190 \
+            --no-internet-enable \
+            build/PanBar-$VERSION.dmg \
+            build/Release/PanBar.app
+
+      - name: Re-zip stapled .app for Sparkle
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          rm -f build/PanBar-$VERSION.zip
+          cd build/Release
+          ditto -c -k --keepParent --sequesterRsrc PanBar.app ../PanBar-$VERSION.zip
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: PanBar-${{ steps.ver.outputs.version }}
+          path: |
+            build/PanBar-*.dmg
+            build/PanBar-*.zip
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            TAG=${GITHUB_REF_NAME}
+          else
+            TAG=v$VERSION
+            git tag $TAG
+            git push origin $TAG
+          fi
+          gh release create "$TAG" \
+            --title "PanBar $VERSION" \
+            --generate-notes \
+            build/PanBar-$VERSION.dmg \
+            build/PanBar-$VERSION.zip
+
+      # appcast 在另一个 job 里更新,避免和 release 抢资源

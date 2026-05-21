@@ -19,6 +19,15 @@ struct AboutPane: View {
                 .multilineTextAlignment(.center)
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 40)
+            Button(L("menu.checkForUpdates", comment: "")) {
+                Updater.shared.checkForUpdates()
+            }
+            .padding(.top, 6)
+            HStack(spacing: 16) {
+                Link("GitHub", destination: URL(string: "https://github.com/TNT-Likely/PanBar")!)
+                Link(L("about.reportIssue", comment: ""), destination: URL(string: "https://github.com/TNT-Likely/PanBar/issues")!)
+            }
+            .font(.system(size: 11))
             Spacer()
             Text("© 2026 PanBar contributors · MIT")
                 .font(.system(size: 10))
