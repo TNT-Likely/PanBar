@@ -19,13 +19,14 @@ final class SettingsWindowController {
         let view = SettingsRootView()
             .environmentObject(container.refresher)
             .environment(\.container, container)
-            .frame(width: 640, height: 480)
+            .frame(minWidth: 600, minHeight: 480)
 
         let hosting = NSHostingController(rootView: view)
         let w = NSWindow(contentViewController: hosting)
         w.title = L("settings.title", comment: "")
-        w.styleMask = [.titled, .closable, .miniaturizable]
-        w.setContentSize(NSSize(width: 640, height: 480))
+        w.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        w.setContentSize(NSSize(width: 720, height: 640))
+        w.minSize = NSSize(width: 600, height: 480)
         w.center()
         w.isReleasedWhenClosed = false
         w.makeKeyAndOrderFront(nil)
