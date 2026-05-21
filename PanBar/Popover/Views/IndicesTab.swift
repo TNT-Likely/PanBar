@@ -71,15 +71,16 @@ struct IndicesTab: View {
     }
 
     private func refresh() async {
+        diag("refresh start")
         guard let container = container else {
-            print("[IndicesTab] container is nil")
+            diag("container is nil")
             return
         }
         await MainActor.run { loading = true; error = nil }
-        print("[IndicesTab] fetching…")
+        diag("calling indexService.fetchAll()…")
         do {
             let result = try await container.indexService.fetchAll()
-            print("[IndicesTab] got \(result.count) quotes")
+            diag("got \(result.count) quotes")
             await MainActor.run {
                 self.quotes = result
                 self.loading = false
@@ -90,10 +91,24 @@ struct IndicesTab: View {
             }
         } catch {
             let msg = "\(error)"
-            print("[IndicesTab] error: \(msg)")
+            diag("error: \(msg)")
             await MainActor.run {
                 self.error = msg
                 self.loading = false
+            }
+        }
+    }
+
+    private func diag(_ msg: String) {
+        let line = "[\(Date())] IndicesTab: \(msg)\n"
+        let url = URL(fileURLWithPath: "/tmp/panbar-indices.log")
+        if let data = line.data(using: .utf8) {
+            if let handle = try? FileHandle(forWritingTo: url) {
+                _ = try? handle.seekToEnd()
+                try? handle.write(contentsOf: data)
+                try? handle.close()
+            } else {
+                try? data.write(to: url)
             }
         }
     }

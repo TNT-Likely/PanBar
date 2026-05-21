@@ -15,7 +15,8 @@ final class PopoverController {
         watchlistRepo: WatchlistRepository,
         settingsRepo: SettingsRepository,
         appearancePrefs: AppearancePreferences,
-        tickerPrefs: TickerPreferences
+        tickerPrefs: TickerPreferences,
+        container: DependencyContainer
     ) {
         self.refresher = refresher
         self.viewModel = PopoverViewModel(
@@ -34,6 +35,7 @@ final class PopoverController {
                 .environmentObject(refresher)
                 .environmentObject(appearancePrefs)
                 .environmentObject(tickerPrefs)
+                .environment(\.container, container)  // 修复:之前没注入,导致 IndicesTab 拿不到 indexService
                 .frame(width: 360, height: 520)
         )
         self.popover = popover
