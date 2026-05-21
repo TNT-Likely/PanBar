@@ -55,17 +55,17 @@ targets:
         SUEnableAutomaticChecks: true
         SUScheduledCheckInterval: 86400
         SUPublicEDKey: ""
-    entitlements:
-      path: PanBar/Resources/PanBar.entitlements
-      properties:
-        com.apple.security.app-sandbox: true
-        com.apple.security.network.client: true
-        com.apple.security.files.user-selected.read-write: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.panbar.PanBar
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_PREVIEWS: YES
+      configs:
+        Debug:
+          # Debug 走无沙盒 entitlements,Sparkle 不需要 Hardened Runtime 也能加载 XPC
+          CODE_SIGN_ENTITLEMENTS: PanBar/Resources/PanBar-Debug.entitlements
+        Release:
+          CODE_SIGN_ENTITLEMENTS: PanBar/Resources/PanBar.entitlements
     dependencies:
       - package: GRDB
       - package: Sparkle
