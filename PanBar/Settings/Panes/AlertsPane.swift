@@ -39,6 +39,8 @@ struct AlertsPane: View {
                     Text("\(count)\(cap)")
                         .monospacedDigit()
                         .foregroundColor(.secondary)
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) { editing = a }
                 }
                 TableColumn(L("col.active", comment: "")) { (a: Alert) in
                     Toggle("", isOn: Binding(
