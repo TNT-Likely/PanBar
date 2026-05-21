@@ -60,6 +60,17 @@ struct SettingsRepository {
         static let hideOnScreenShare = "hide_on_screen_share"
         static let privacyManualHide = "privacy_manual_hide"
         static let tickerIndexIDs = "ticker_index_ids"
+        static let fxRefreshInterval = "fx_refresh_interval"   // seconds; 0 = off
+    }
+
+    /// FX 自动刷新间隔(秒)。0 = 关闭自动刷新。
+    var fxRefreshInterval: Int {
+        if let s = string(Keys.fxRefreshInterval), let v = Int(s), v >= 0 { return v }
+        return FXService.defaultInterval
+    }
+
+    func setFXRefreshInterval(_ seconds: Int) throws {
+        try set(Keys.fxRefreshInterval, "\(max(0, seconds))")
     }
 
     var baseCurrency: Currency {

@@ -75,7 +75,7 @@ extension EnvironmentValues {
 
 struct SettingsRootView: View {
     enum Pane: String, CaseIterable, Identifiable {
-        case general, ticker, portfolio, watchlist, alerts, dataSources, about
+        case general, ticker, portfolio, watchlist, alerts, dataSources, fx, about
         var id: String { rawValue }
         var title: String {
             switch self {
@@ -85,6 +85,7 @@ struct SettingsRootView: View {
             case .watchlist:   return L("settings.watchlist", comment: "")
             case .alerts:      return L("settings.alerts", comment: "")
             case .dataSources: return L("settings.dataSources", comment: "")
+            case .fx:          return L("settings.fx", comment: "")
             case .about:       return L("settings.about", comment: "")
             }
         }
@@ -96,6 +97,7 @@ struct SettingsRootView: View {
             case .watchlist:   return "star"
             case .alerts:      return "bell"
             case .dataSources: return "antenna.radiowaves.left.and.right"
+            case .fx:          return "dollarsign.arrow.circlepath"
             case .about:       return "info.circle"
             }
         }
@@ -117,6 +119,7 @@ struct SettingsRootView: View {
             case .watchlist:   WatchlistPane()
             case .alerts:      AlertsPane()
             case .dataSources: DataSourcesPane()
+            case .fx:          FXPane()
             case .about:       AboutPane()
             }
         }
