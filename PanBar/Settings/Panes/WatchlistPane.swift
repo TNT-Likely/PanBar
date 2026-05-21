@@ -79,7 +79,13 @@ struct WatchlistPane: View {
             }
         }
         .padding(20)
-        .onAppear(perform: reload)
+        .onAppear {
+            reload()
+            if SettingsWindowController.pendingAction == .addWatch {
+                SettingsWindowController.pendingAction = nil
+                showAdd = true
+            }
+        }
         .sheet(isPresented: $showAdd) {
             WatchEditorSheet(initial: nil, onSaved: {
                 showAdd = false

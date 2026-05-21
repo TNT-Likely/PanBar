@@ -92,7 +92,13 @@ struct PortfolioPane: View {
             }
         }
         .padding(20)
-        .onAppear(perform: reload)
+        .onAppear {
+            reload()
+            if SettingsWindowController.pendingAction == .addHolding {
+                SettingsWindowController.pendingAction = nil
+                showAdd = true
+            }
+        }
         .sheet(isPresented: $showAdd) {
             HoldingEditorSheet(initial: nil, onSaved: {
                 showAdd = false

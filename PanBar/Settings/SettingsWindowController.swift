@@ -7,9 +7,36 @@ final class SettingsWindowController {
 
     private var window: NSWindow?
 
+    /// 由 popover 触发的"快速添加":打开设置 + 自动跳到目标 pane + 自动弹添加 sheet。
+    /// PortfolioPane / WatchlistPane / AlertsPane 启动时会读这个标记并消费。
+    enum PendingAction {
+        case addHolding
+        case addWatch
+        case addAlert
+    }
+    static var pendingAction: PendingAction?
+
+    /// SettingsRootView 启动时读这个并设置 initial selected pane。
+    static var preferredPane: SettingsRootView.Pane?
+
     private init() {}
 
+    func show(initialAction: PendingAction? = nil) {
+        Self.pendingAction = initialAction
+        Self.preferredPane = switch initialAction {
+        case .addHolding: .portfolio
+        case .addWatch:   .watchlist
+        case .addAlert:   .alerts
+        case nil:         nil
+        }
+        showWindow()
+    }
+
     func show() {
+        showWindow()
+    }
+
+    private func showWindow() {
         if let window = window {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
@@ -74,7 +101,7 @@ struct SettingsRootView: View {
         }
     }
 
-    @State private var selected: Pane = .general
+    @State private var selected: Pane = SettingsWindowController.preferredPane ?? .general
 
     var body: some View {
         NavigationSplitView {
@@ -92,6 +119,9 @@ struct SettingsRootView: View {
             case .dataSources: DataSourcesPane()
             case .about:       AboutPane()
             }
+        }
+        .onAppear {
+            SettingsWindowController.preferredPane = nil
         }
     }
 }

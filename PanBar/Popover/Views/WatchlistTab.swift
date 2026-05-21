@@ -7,31 +7,58 @@ struct WatchlistTab: View {
     @EnvironmentObject var prefs: TickerPreferences
 
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                if vm.watchlist.isEmpty {
-                    emptyState
-                } else {
-                    ForEach(vm.watchlist) { item in
-                        WatchRow(item: item, quote: refresher.quotes[item.symbol], density: appearance.density, scheme: prefs.colorScheme)
-                            .contextMenu {
-                                Button(L("action.openInBrowser", comment: "")) {
+        VStack(spacing: 0) {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    if vm.watchlist.isEmpty {
+                        emptyState
+                    } else {
+                        ForEach(vm.watchlist) { item in
+                            WatchRow(item: item, quote: refresher.quotes[item.symbol], density: appearance.density, scheme: prefs.colorScheme)
+                                .contextMenu {
+                                    Button(L("action.openInBrowser", comment: "")) {
+                                        openInBrowser(item.symbol)
+                                    }
+                                    Divider()
+                                    Button(L("action.delete", comment: ""), role: .destructive) {
+                                        vm.deleteWatchItem(item.id)
+                                    }
+                                }
+                                .onTapGesture(count: 2) {
                                     openInBrowser(item.symbol)
                                 }
-                                Divider()
-                                Button(L("action.delete", comment: ""), role: .destructive) {
-                                    vm.deleteWatchItem(item.id)
-                                }
-                            }
-                            .onTapGesture(count: 2) {
-                                openInBrowser(item.symbol)
-                            }
-                        Divider().opacity(0.4)
+                            Divider().opacity(0.4)
+                        }
                     }
                 }
             }
+            .frame(maxHeight: 290)
+
+            if !vm.watchlist.isEmpty {
+                Button(action: openAddSheet) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus.circle.fill")
+                        Text(L("watchlist.quickAdd", comment: ""))
+                    }
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.accentColor)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .background(
+                    VStack(spacing: 0) {
+                        Divider().opacity(0.4)
+                        Spacer()
+                    }
+                )
+            }
         }
-        .frame(maxHeight: 320)
+    }
+
+    private func openAddSheet() {
+        SettingsWindowController.shared.show(initialAction: .addWatch)
     }
 
     private func openInBrowser(_ symbol: SymbolID) {
@@ -49,6 +76,10 @@ struct WatchlistTab: View {
             Text(L("watchlist.empty", comment: ""))
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
+            Button(L("watchlist.quickAdd", comment: "")) {
+                openAddSheet()
+            }
+            .controlSize(.small)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)

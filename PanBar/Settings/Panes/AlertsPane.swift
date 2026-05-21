@@ -75,7 +75,13 @@ struct AlertsPane: View {
             }
         }
         .padding(20)
-        .onAppear(perform: reload)
+        .onAppear {
+            reload()
+            if SettingsWindowController.pendingAction == .addAlert {
+                SettingsWindowController.pendingAction = nil
+                showAdd = true
+            }
+        }
         .sheet(isPresented: $showAdd) {
             AlertEditorSheet(initial: nil) {
                 showAdd = false

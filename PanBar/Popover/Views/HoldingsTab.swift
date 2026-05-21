@@ -7,36 +7,68 @@ struct HoldingsTab: View {
     @EnvironmentObject var prefs: TickerPreferences
 
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                if vm.holdings.isEmpty {
-                    emptyState
-                } else {
-                    ForEach(refresher.snapshot.positions) { pos in
-                        HoldingRow(
-                            position: pos,
-                            density: appearance.density,
-                            scheme: prefs.colorScheme,
-                            baseCurrency: refresher.snapshot.baseCurrency
-                        )
-                            .contextMenu {
-                                Button(L("action.openInBrowser", comment: "")) {
+        VStack(spacing: 0) {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    if vm.holdings.isEmpty {
+                        emptyState
+                    } else {
+                        ForEach(refresher.snapshot.positions) { pos in
+                            HoldingRow(
+                                position: pos,
+                                density: appearance.density,
+                                scheme: prefs.colorScheme,
+                                baseCurrency: refresher.snapshot.baseCurrency
+                            )
+                                .contextMenu {
+                                    Button(L("action.openInBrowser", comment: "")) {
+                                        openInBrowser(pos.holding.symbol)
+                                    }
+                                    Divider()
+                                    Button(L("action.delete", comment: ""), role: .destructive) {
+                                        vm.deleteHolding(pos.holding.id)
+                                    }
+                                }
+                                .onTapGesture(count: 2) {
                                     openInBrowser(pos.holding.symbol)
                                 }
-                                Divider()
-                                Button(L("action.delete", comment: ""), role: .destructive) {
-                                    vm.deleteHolding(pos.holding.id)
-                                }
-                            }
-                            .onTapGesture(count: 2) {
-                                openInBrowser(pos.holding.symbol)
-                            }
-                        Divider().opacity(0.4)
+                            Divider().opacity(0.4)
+                        }
                     }
                 }
             }
+            .frame(maxHeight: 290)
+
+            // 底部快捷"+ 添加"行
+            if !vm.holdings.isEmpty {
+                quickAddButton
+            }
         }
-        .frame(maxHeight: 320)
+    }
+
+    private var quickAddButton: some View {
+        Button(action: openAddSheet) {
+            HStack(spacing: 4) {
+                Image(systemName: "plus.circle.fill")
+                Text(L("holdings.quickAdd", comment: ""))
+            }
+            .font(.system(size: 11, weight: .medium))
+            .foregroundColor(.accentColor)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(
+            VStack(spacing: 0) {
+                Divider().opacity(0.4)
+                Spacer()
+            }
+        )
+    }
+
+    private func openAddSheet() {
+        SettingsWindowController.shared.show(initialAction: .addHolding)
     }
 
     private func openInBrowser(_ symbol: SymbolID) {
@@ -55,7 +87,7 @@ struct HoldingsTab: View {
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
             Button(L("holdings.addFirst", comment: "")) {
-                SettingsWindowController.shared.show()
+                openAddSheet()
             }
             .controlSize(.small)
         }

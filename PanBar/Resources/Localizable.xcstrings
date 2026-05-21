@@ -140,6 +140,18 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "+ 添加持仓" } }
       }
     },
+    "holdings.quickAdd" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add Position" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加持仓" } }
+      }
+    },
+    "watchlist.quickAdd" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add to Watchlist" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加自选" } }
+      }
+    },
     "holdings.addTitle" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Add Position" } },
