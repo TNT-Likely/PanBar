@@ -105,7 +105,7 @@ final class ScreenSharingMonitor {
     private func detectWithReason() -> Detection {
         // 只走窗口扫描:精确,无误报。
         // 进程兜底已移除(只要 Slack/Zoom 在跑就触发,误报太多)。
-        // 用户希望最可靠的方式:⌘⇧⌥P 手动切换隐私模式。
+        // 用户希望最可靠的方式:⌘⌃M 手动切换隐私模式。
         if let (owner, windowName) = sharingWindow() {
             return Detection(isSharing: true, reason: "window owner=\(owner) name=\(windowName ?? "<nil>")")
         }

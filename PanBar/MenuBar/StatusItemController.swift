@@ -244,7 +244,7 @@ final class StatusItemController {
         togglePopover()
     }
 
-    /// 由全局快捷键 ⌘⇧⌥P 调用,切换隐私模式。
+    /// 由全局快捷键 ⌘⌃M 调用,切换隐私模式。
     func togglePrivacyViaHotkey() {
         togglePrivacy()
     }

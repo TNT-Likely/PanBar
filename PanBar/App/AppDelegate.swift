@@ -81,7 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 通知权限
             NotificationService.shared.requestAuthorizationIfNeeded()
 
-            // 全局快捷键 ⌘⇧P
+            // 全局快捷键 ⌘⌃P
             registerGlobalHotkeyIfEnabled(container: container)
 
             // Sparkle 自动更新(Release 配置才启动定时检查)

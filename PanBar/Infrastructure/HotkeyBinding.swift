@@ -43,11 +43,11 @@ struct HotkeyBinding: Codable, Equatable, Sendable {
 
     static let defaultTogglePopover = HotkeyBinding(
         keyCode: UInt16(kVK_ANSI_P),
-        carbonModifiers: UInt32(cmdKey | shiftKey)
+        carbonModifiers: UInt32(cmdKey | controlKey)
     )
     static let defaultTogglePrivacy = HotkeyBinding(
         keyCode: UInt16(kVK_ANSI_M),
-        carbonModifiers: UInt32(cmdKey | shiftKey)
+        carbonModifiers: UInt32(cmdKey | controlKey)
     )
 
     // MARK: keyCode → 字符

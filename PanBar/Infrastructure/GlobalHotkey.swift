@@ -5,8 +5,8 @@ import AppKit
 /// 极简全局快捷键封装。注册多个固定组合,用 Carbon RegisterEventHotKey。
 ///
 /// 内置组合:
-///   - ⌘⇧P   : 切换 Popover(togglePopover)
-///   - ⌘⇧⌥P : 切换隐私模式(togglePrivacy)
+///   - ⌘⌃P : 切换 Popover(togglePopover)
+///   - ⌘⌃M : 切换隐私模式(togglePrivacy)
 @MainActor
 final class GlobalHotkey {
     static let shared = GlobalHotkey()

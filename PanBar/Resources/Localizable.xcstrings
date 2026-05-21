@@ -640,8 +640,8 @@
     },
     "settings.hideOnScreenShare.hint" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "macOS has no public API to detect ongoing screen recording. We scan for known sharing indicator windows (Zoom toolbar, Teams floating bar, etc.) — best effort, may miss some. For reliable hide use ⌘⇧⌥P." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "macOS 没有公开 API 让 app 检测「正在录屏」。这里通过扫描 Zoom / Teams 等共享时才会出现的浮动窗口来识别,best-effort 可能漏报。需要 100% 可靠时用 ⌘⇧⌥P 手动切换。" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "macOS has no public API to detect ongoing screen recording. We scan for known sharing indicator windows (Zoom toolbar, Teams floating bar, etc.) — best effort, may miss some. For reliable hide use ⌘⌃M." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "macOS 没有公开 API 让 app 检测「正在录屏」。这里通过扫描 Zoom / Teams 等共享时才会出现的浮动窗口来识别,best-effort 可能漏报。需要 100% 可靠时用 ⌘⌃M 手动切换。" } }
       }
     },
     "menu.privacy.hideNow" : {
