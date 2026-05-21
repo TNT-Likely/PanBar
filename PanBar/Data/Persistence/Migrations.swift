@@ -33,7 +33,7 @@ enum Migrations {
             }
 
             try db.create(table: "fxCache") { t in
-                t.column("pair", .text).primaryKey() // "USDCNY"
+                t.column("pair", .text).primaryKey()
                 t.column("rate", .text).notNull()
                 t.column("asOf", .datetime).notNull()
             }
@@ -46,11 +46,21 @@ enum Migrations {
                 t.column("market", .text).notNull()
                 t.column("name", .text).notNull().defaults(to: "")
                 t.column("condition", .text).notNull()
-                t.column("threshold", .text).notNull()   // Decimal as string
+                t.column("threshold", .text).notNull()
                 t.column("isActive", .boolean).notNull().defaults(to: true)
                 t.column("lastTriggeredAt", .datetime)
                 t.column("cooldownSeconds", .integer).notNull().defaults(to: 300)
                 t.column("createdAt", .datetime).notNull()
+            }
+        }
+
+        migrator.registerMigration("v3_in_ticker") { db in
+            // 给每只持仓 / 自选加 inTicker 标记(默认 true,保留现状)
+            try db.alter(table: "holding") { t in
+                t.add(column: "inTicker", .boolean).notNull().defaults(to: true)
+            }
+            try db.alter(table: "watchItem") { t in
+                t.add(column: "inTicker", .boolean).notNull().defaults(to: true)
             }
         }
 

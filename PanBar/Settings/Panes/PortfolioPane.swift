@@ -4,6 +4,7 @@ struct PortfolioPane: View {
     @Environment(\.container) private var container
     @State private var holdings: [Holding] = []
     @State private var showAdd: Bool = false
+    @State private var editing: Holding?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -32,15 +33,36 @@ struct PortfolioPane: View {
                 TableColumn(L("col.market", comment: "")) { (h: Holding) in Text(h.symbol.market.displayName) }
                 TableColumn(L("col.qty", comment: "")) { (h: Holding) in Text("\(h.quantity)").monospacedDigit() }
                 TableColumn(L("col.cost", comment: "")) { (h: Holding) in Text(h.currency.format(h.costPrice)).monospacedDigit() }
+                TableColumn(L("col.inTicker", comment: "")) { (h: Holding) in
+                    Toggle("", isOn: Binding(
+                        get: { h.inTicker },
+                        set: { newValue in
+                            var copy = h
+                            copy.inTicker = newValue
+                            try? container?.holdingsRepo.upsert(copy)
+                            reload()
+                            container?.refresher.refreshNow()
+                        }
+                    ))
+                    .labelsHidden()
+                    .help(L("col.inTicker.help", comment: ""))
+                }
                 TableColumn("") { (h: Holding) in
-                    Button(role: .destructive) {
-                        try? container?.holdingsRepo.delete(id: h.id)
-                        reload()
-                        container?.refresher.refreshNow()
-                    } label: {
-                        Image(systemName: "trash")
+                    HStack(spacing: 4) {
+                        Button { editing = h } label: {
+                            Image(systemName: "pencil")
+                        }
+                        .buttonStyle(.borderless)
+                        .help(L("action.edit", comment: ""))
+                        Button(role: .destructive) {
+                            try? container?.holdingsRepo.delete(id: h.id)
+                            reload()
+                            container?.refresher.refreshNow()
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.borderless)
                     }
-                    .buttonStyle(.borderless)
                 }
             }
 
@@ -54,11 +76,18 @@ struct PortfolioPane: View {
         .padding(20)
         .onAppear(perform: reload)
         .sheet(isPresented: $showAdd) {
-            AddHoldingSheet(onSaved: {
+            HoldingEditorSheet(initial: nil, onSaved: {
                 showAdd = false
                 reload()
                 container?.refresher.refreshNow()
             }, onCancel: { showAdd = false })
+        }
+        .sheet(item: $editing) { existing in
+            HoldingEditorSheet(initial: existing, onSaved: {
+                editing = nil
+                reload()
+                container?.refresher.refreshNow()
+            }, onCancel: { editing = nil })
         }
     }
 
@@ -84,8 +113,9 @@ struct PortfolioPane: View {
     }
 }
 
-private struct AddHoldingSheet: View {
+private struct HoldingEditorSheet: View {
     @Environment(\.container) private var container
+    let initial: Holding?
     var onSaved: () -> Void
     var onCancel: () -> Void
 
@@ -98,7 +128,7 @@ private struct AddHoldingSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(L("holdings.addTitle", comment: ""))
+            Text(initial == nil ? L("holdings.addTitle", comment: "") : L("holdings.editTitle", comment: ""))
                 .font(.title3)
 
             Form {
@@ -130,6 +160,16 @@ private struct AddHoldingSheet: View {
         }
         .padding(24)
         .frame(width: 420)
+        .onAppear(perform: prefill)
+    }
+
+    private func prefill() {
+        guard let h = initial else { return }
+        market = h.symbol.market
+        code = h.symbol.code
+        name = h.name
+        quantity = "\(h.quantity)"
+        costPrice = "\(h.costPrice)"
     }
 
     private func save() {
@@ -141,12 +181,22 @@ private struct AddHoldingSheet: View {
             error = L("error.costInvalid", comment: ""); return
         }
         let sid = SymbolID(code: code.trimmingCharacters(in: .whitespaces), market: market)
-        let holding = Holding(
-            symbol: sid,
-            name: name.isEmpty ? code : name,
-            quantity: qty,
-            costPrice: cost
-        )
+        let holding: Holding
+        if var existing = initial {
+            existing.symbol = sid
+            existing.name = name.isEmpty ? code : name
+            existing.quantity = qty
+            existing.costPrice = cost
+            existing.currency = sid.market.defaultCurrency
+            holding = existing
+        } else {
+            holding = Holding(
+                symbol: sid,
+                name: name.isEmpty ? code : name,
+                quantity: qty,
+                costPrice: cost
+            )
+        }
         do {
             try container?.holdingsRepo.upsert(holding)
             onSaved()

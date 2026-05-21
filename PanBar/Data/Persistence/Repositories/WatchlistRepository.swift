@@ -9,6 +9,7 @@ private struct WatchRecord: Codable, FetchableRecord, PersistableRecord {
     var market: String
     var name: String
     var order: Int
+    var inTicker: Bool
     var createdAt: Date
 
     func toDomain() -> WatchItem? {
@@ -19,6 +20,7 @@ private struct WatchRecord: Codable, FetchableRecord, PersistableRecord {
             symbol: SymbolID(code: code, market: market),
             name: name,
             order: order,
+            inTicker: inTicker,
             createdAt: createdAt
         )
     }
@@ -30,6 +32,7 @@ private struct WatchRecord: Codable, FetchableRecord, PersistableRecord {
             market: w.symbol.market.rawValue,
             name: w.name,
             order: w.order,
+            inTicker: w.inTicker,
             createdAt: w.createdAt
         )
     }

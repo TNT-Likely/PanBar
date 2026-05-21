@@ -13,6 +13,7 @@ private struct HoldingRecord: Codable, FetchableRecord, PersistableRecord {
     var costPrice: String
     var currency: String
     var note: String?
+    var inTicker: Bool
     var createdAt: Date
 
     func toDomain() -> Holding? {
@@ -29,6 +30,7 @@ private struct HoldingRecord: Codable, FetchableRecord, PersistableRecord {
             costPrice: cost,
             currency: currency,
             note: note,
+            inTicker: inTicker,
             createdAt: createdAt
         )
     }
@@ -43,6 +45,7 @@ private struct HoldingRecord: Codable, FetchableRecord, PersistableRecord {
             costPrice: "\(h.costPrice)",
             currency: h.currency.rawValue,
             note: h.note,
+            inTicker: h.inTicker,
             createdAt: h.createdAt
         )
     }

@@ -89,27 +89,64 @@ final class StatusItemController {
     }
 
     private func applyQuotes(_ quotes: [SymbolID: Quote]) {
-        // 按持仓优先 + 自选其次的顺序展示
-        let positions = refresher.snapshot.positions
-        var ordered: [Quote] = []
+        var items: [TickerItem] = []
+
+        // 1) Summary 三件套(用户在 Settings → Ticker 单独勾选)
+        let snap = refresher.snapshot
+        if prefs.showTodayPnL {
+            let dir: TickerDirection = snap.todayPnL > 0 ? .up : (snap.todayPnL < 0 ? .down : .neutral)
+            let sign = snap.todayPnL >= 0 ? "+" : "-"
+            let value = sign + snap.baseCurrency.format(snap.todayPnL.magnitude) +
+                String(format: " (%+.2f%%)", snap.todayPnLPct * 100)
+            items.append(.summary(label: L("summary.today", comment: ""), value: value, direction: dir))
+        }
+        if prefs.showTotalAssets {
+            items.append(.summary(
+                label: L("summary.totalAssets", comment: ""),
+                value: snap.baseCurrency.format(snap.totalAssets),
+                direction: .neutral
+            ))
+        }
+        if prefs.showAllTimePnL {
+            let dir: TickerDirection = snap.allTimePnL > 0 ? .up : (snap.allTimePnL < 0 ? .down : .neutral)
+            let sign = snap.allTimePnL >= 0 ? "+" : "-"
+            let value = sign + snap.baseCurrency.format(snap.allTimePnL.magnitude) +
+                String(format: " (%+.2f%%)", snap.allTimePnLPct * 100)
+            items.append(.summary(label: L("summary.allTime", comment: ""), value: value, direction: dir))
+        }
+
+        // 2) 持仓行情:只取勾选 inTicker=true 的
         var seen = Set<SymbolID>()
-        for p in positions {
+        for p in snap.positions where p.holding.inTicker {
             if let q = quotes[p.holding.symbol] {
-                ordered.append(q)
+                items.append(.quote(q))
                 seen.insert(p.holding.symbol)
             }
         }
-        // 补上自选(不在持仓里的)
-        for (sid, q) in quotes where !seen.contains(sid) {
-            ordered.append(q)
+        // 3) 自选行情:只取勾选 inTicker=true 的
+        let watchlist = (try? holdingsRepoFetchSiblingWatch()) ?? []
+        for w in watchlist where w.inTicker && !seen.contains(w.symbol) {
+            if let q = quotes[w.symbol] {
+                items.append(.quote(q))
+            }
         }
-        // 用户设置的上限
-        let cap = max(1, prefs.maxItems)
-        if ordered.count > cap { ordered = Array(ordered.prefix(cap)) }
 
-        let attr = renderer.render(quotes: ordered)
+        // 4) 应用上限(只对股票行情生效,summary 始终都展示)
+        let stockCap = max(1, prefs.maxItems)
+        let summaries = items.filter { if case .summary = $0 { return true } else { return false } }
+        let quotesItems = items.filter { if case .quote = $0 { return true } else { return false } }
+        let cappedQuotes = Array(quotesItems.prefix(stockCap))
+        items = summaries + cappedQuotes
+
+        let attr = renderer.render(items: items)
         tickerView.update(attributed: attr)
         statusItem.length = tickerView.totalWidth
+    }
+
+    /// 从持仓 repo 同级的 watchlist repo 拿数据。通过弱引用注入避免循环引用。
+    private func holdingsRepoFetchSiblingWatch() throws -> [WatchItem] {
+        guard let container = DependencyContainer.shared else { return [] }
+        return try container.watchlistRepo.all()
     }
 
     // MARK: actions

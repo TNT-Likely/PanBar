@@ -30,9 +30,24 @@ private struct TickerPaneContent: View {
                 }
                 Toggle(L("settings.pauseOnHover", comment: ""), isOn: $prefs.pauseOnHover)
                 Toggle(L("settings.pauseWhenClosed", comment: ""), isOn: $prefs.pauseWhenClosed)
-                Stepper(value: $prefs.maxItems, in: 1...30) {
+                Stepper(value: $prefs.maxItems, in: 1...50) {
                     Text(String(format: L("settings.maxItems", comment: ""), prefs.maxItems))
                 }
+            }
+
+            Section(header: Text(L("ticker.summarySection", comment: "")).font(.headline)) {
+                Toggle(L("ticker.showTodayPnL", comment: ""), isOn: $prefs.showTodayPnL)
+                Toggle(L("ticker.showTotalAssets", comment: ""), isOn: $prefs.showTotalAssets)
+                Toggle(L("ticker.showAllTimePnL", comment: ""), isOn: $prefs.showAllTimePnL)
+                Text(L("ticker.summaryHint", comment: ""))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Section(header: Text(L("ticker.itemsHint.title", comment: "")).font(.headline)) {
+                Text(L("ticker.itemsHint.body", comment: ""))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
         }
         .formStyle(.grouped)

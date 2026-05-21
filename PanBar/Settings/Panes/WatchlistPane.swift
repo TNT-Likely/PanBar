@@ -4,6 +4,7 @@ struct WatchlistPane: View {
     @Environment(\.container) private var container
     @State private var items: [WatchItem] = []
     @State private var showAdd: Bool = false
+    @State private var editing: WatchItem?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -28,15 +29,36 @@ struct WatchlistPane: View {
                 }
                 TableColumn(L("col.name", comment: "")) { (w: WatchItem) in Text(w.name) }
                 TableColumn(L("col.market", comment: "")) { (w: WatchItem) in Text(w.symbol.market.displayName) }
+                TableColumn(L("col.inTicker", comment: "")) { (w: WatchItem) in
+                    Toggle("", isOn: Binding(
+                        get: { w.inTicker },
+                        set: { newValue in
+                            var copy = w
+                            copy.inTicker = newValue
+                            try? container?.watchlistRepo.upsert(copy)
+                            reload()
+                            container?.refresher.refreshNow()
+                        }
+                    ))
+                    .labelsHidden()
+                    .help(L("col.inTicker.help", comment: ""))
+                }
                 TableColumn("") { (w: WatchItem) in
-                    Button(role: .destructive) {
-                        try? container?.watchlistRepo.delete(id: w.id)
-                        reload()
-                        container?.refresher.refreshNow()
-                    } label: {
-                        Image(systemName: "trash")
+                    HStack(spacing: 4) {
+                        Button { editing = w } label: {
+                            Image(systemName: "pencil")
+                        }
+                        .buttonStyle(.borderless)
+                        .help(L("action.edit", comment: ""))
+                        Button(role: .destructive) {
+                            try? container?.watchlistRepo.delete(id: w.id)
+                            reload()
+                            container?.refresher.refreshNow()
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.borderless)
                     }
-                    .buttonStyle(.borderless)
                 }
             }
             if items.isEmpty {
@@ -49,11 +71,18 @@ struct WatchlistPane: View {
         .padding(20)
         .onAppear(perform: reload)
         .sheet(isPresented: $showAdd) {
-            AddWatchSheet(onSaved: {
+            WatchEditorSheet(initial: nil, onSaved: {
                 showAdd = false
                 reload()
                 container?.refresher.refreshNow()
             }, onCancel: { showAdd = false })
+        }
+        .sheet(item: $editing) { existing in
+            WatchEditorSheet(initial: existing, onSaved: {
+                editing = nil
+                reload()
+                container?.refresher.refreshNow()
+            }, onCancel: { editing = nil })
         }
     }
 
@@ -79,8 +108,9 @@ struct WatchlistPane: View {
     }
 }
 
-private struct AddWatchSheet: View {
+private struct WatchEditorSheet: View {
     @Environment(\.container) private var container
+    let initial: WatchItem?
     var onSaved: () -> Void
     var onCancel: () -> Void
 
@@ -91,7 +121,7 @@ private struct AddWatchSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(L("watchlist.addTitle", comment: ""))
+            Text(initial == nil ? L("watchlist.addTitle", comment: "") : L("watchlist.editTitle", comment: ""))
                 .font(.title3)
             Form {
                 Picker(L("col.market", comment: ""), selection: $market) {
@@ -115,14 +145,28 @@ private struct AddWatchSheet: View {
         }
         .padding(24)
         .frame(width: 420)
+        .onAppear(perform: prefill)
+    }
+
+    private func prefill() {
+        guard let w = initial else { return }
+        market = w.symbol.market
+        code = w.symbol.code
+        name = w.name
     }
 
     private func save() {
         guard !code.isEmpty else { error = L("error.codeRequired", comment: ""); return }
-        let item = WatchItem(
-            symbol: SymbolID(code: code.trimmingCharacters(in: .whitespaces), market: market),
-            name: name.isEmpty ? code : name
-        )
+        let trimmed = code.trimmingCharacters(in: .whitespaces)
+        let sid = SymbolID(code: trimmed, market: market)
+        let item: WatchItem
+        if var existing = initial {
+            existing.symbol = sid
+            existing.name = name.isEmpty ? trimmed : name
+            item = existing
+        } else {
+            item = WatchItem(symbol: sid, name: name.isEmpty ? trimmed : name)
+        }
         do {
             try container?.watchlistRepo.upsert(item)
             onSaved()

@@ -206,6 +206,78 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "删除" } }
       }
     },
+    "action.edit" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "编辑" } }
+      }
+    },
+    "holdings.editTitle" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit Position" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "编辑持仓" } }
+      }
+    },
+    "watchlist.editTitle" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit Watchlist Item" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "编辑自选" } }
+      }
+    },
+    "col.inTicker" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ticker" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "滚动" } }
+      }
+    },
+    "col.inTicker.help" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show this item in the menu bar scroller" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "是否在菜单栏滚动条中展示这条" } }
+      }
+    },
+    "ticker.summarySection" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Summary in Ticker" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "滚动条 · 汇总指标" } }
+      }
+    },
+    "ticker.showTodayPnL" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show today's P&L" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示今日盈亏" } }
+      }
+    },
+    "ticker.showTotalAssets" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show total assets" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示当前市值" } }
+      }
+    },
+    "ticker.showAllTimePnL" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show all-time P&L" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示累计盈亏" } }
+      }
+    },
+    "ticker.summaryHint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Summary items appear at the start of the scroller, always shown regardless of \"Max items\"." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "汇总项显示在滚动条最前方,不受\"最多展示数\"限制。" } }
+      }
+    },
+    "ticker.itemsHint.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pick stocks per row" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "单只勾选" } }
+      }
+    },
+    "ticker.itemsHint.body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Each holding and watchlist row has a \"Ticker\" switch — go to Settings → Portfolio / Watchlist to enable or disable individual items." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "持仓和自选每一行都有\"滚动\"开关 — 到 设置 → 持仓 / 自选 单独开关每一条。" } }
+      }
+    },
     "col.symbol" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Symbol" } },

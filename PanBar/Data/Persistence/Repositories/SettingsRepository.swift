@@ -35,6 +35,9 @@ struct SettingsRepository {
         static let pauseWhenClosed = "pause_when_closed"
         static let maxTickerItems = "max_ticker_items"
         static let globalHotkeyEnabled = "global_hotkey_enabled"
+        static let tickerShowTotalAssets = "ticker_show_total_assets"
+        static let tickerShowTodayPnL = "ticker_show_today_pnl"
+        static let tickerShowAllTimePnL = "ticker_show_alltime_pnl"
     }
 
     var baseCurrency: Currency {
