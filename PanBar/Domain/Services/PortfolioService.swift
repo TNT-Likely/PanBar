@@ -39,19 +39,37 @@ actor PortfolioService {
             quotes = (try? await provider.fetch(Array(allSymbols))) ?? [:]
         }
 
-        return await buildSnapshot(holdings: holdings, quotes: quotes)
+        let converter = await fx.currentConverter()
+        let baseCurrency = settingsRepo.baseCurrency
+        return Self.computeSnapshotSync(
+            holdings: holdings,
+            quotes: quotes,
+            converter: converter,
+            baseCurrency: baseCurrency
+        )
     }
 
-    /// 不走网络,只用调用方提供的行情(通常来自磁盘缓存)。
-    /// 用于 popover 首次打开的「秒出 + 后台刷新」场景。
+    /// 不走网络,只用调用方提供的行情。用于「秒出 + 后台刷新」。
     func computeSnapshot(usingCachedQuotes cached: [SymbolID: Quote]) async -> PortfolioSnapshot {
         let holdings = (try? holdingsRepo.all()) ?? []
-        return await buildSnapshot(holdings: holdings, quotes: cached)
+        let converter = await fx.currentConverter()
+        let baseCurrency = settingsRepo.baseCurrency
+        return Self.computeSnapshotSync(
+            holdings: holdings,
+            quotes: cached,
+            converter: converter,
+            baseCurrency: baseCurrency
+        )
     }
 
-    private func buildSnapshot(holdings: [Holding], quotes: [SymbolID: Quote]) async -> PortfolioSnapshot {
-        let baseCurrency = settingsRepo.baseCurrency
-
+    /// 纯函数版本 —— 无 actor 调用、无 await,可在 @MainActor init 里直接用,
+    /// 让 popover 一打开就有完整 totalAssets / pnl(冷启动场景)。
+    static func computeSnapshotSync(
+        holdings: [Holding],
+        quotes: [SymbolID: Quote],
+        converter: CurrencyConverter,
+        baseCurrency: Currency
+    ) -> PortfolioSnapshot {
         var positions: [HoldingPosition] = []
         var totalAssets: Decimal = 0
         var totalCost: Decimal = 0
@@ -71,11 +89,10 @@ actor PortfolioService {
             }()
             let dayPnL = (price - prevClose) * h.quantity
 
-            // 换算到本位币
-            let baseMarketValue = await fx.convert(marketValue, from: h.currency, to: baseCurrency)
-            let baseTodayPnL = await fx.convert(dayPnL, from: h.currency, to: baseCurrency)
-            let basePnL = await fx.convert(pnl, from: h.currency, to: baseCurrency)
-            let baseCost = await fx.convert(costValue, from: h.currency, to: baseCurrency)
+            let baseMarketValue = converter.convert(marketValue, from: h.currency, to: baseCurrency)
+            let baseTodayPnL = converter.convert(dayPnL, from: h.currency, to: baseCurrency)
+            let basePnL = converter.convert(pnl, from: h.currency, to: baseCurrency)
+            let baseCost = converter.convert(costValue, from: h.currency, to: baseCurrency)
 
             positions.append(HoldingPosition(
                 holding: h,

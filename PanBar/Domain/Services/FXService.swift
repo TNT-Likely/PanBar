@@ -100,6 +100,11 @@ actor FXService {
         (cache, lastFetch, isRefreshing)
     }
 
+    /// 抓一份当前汇率作 Sendable 值类型,后续可在任意线程同步换算。
+    func currentConverter() -> CurrencyConverter {
+        CurrencyConverter(fromCache: cache)
+    }
+
     /// 用户在设置页点「立即刷新」。
     /// 不管 TTL,强制走网络;返回是否拿到了新值(false 表示请求挂了或空响应)。
     /// 失败时 cache 不被清掉,继续用旧值。

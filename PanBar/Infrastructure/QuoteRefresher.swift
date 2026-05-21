@@ -13,6 +13,8 @@ final class QuoteRefresher: ObservableObject {
 
     /// 用户在设置里改了「行情刷新间隔」时,更新这个值;runLoop 下次循环生效。
     @Published var tickerInterval: TimeInterval = 5
+    /// 是否在全市场休市时完全暂停自动刷新。用户开关,默认 true。
+    @Published var pauseWhenClosed: Bool = true
 
     private func interval(for pace: Pace) -> TimeInterval {
         switch pace {
@@ -37,6 +39,9 @@ final class QuoteRefresher: ObservableObject {
     private let indexService: IndexService
     private let clock: MarketClock
     private let quoteCacheRepo: QuoteCacheRepository?
+    private let fxCacheRepo: FXCacheRepository?
+    private let holdingsRepo: HoldingsRepository?
+    private let settingsRepo: SettingsRepository?
     private let alertEngine: AlertEngine?
     private var task: Task<Void, Never>?
     private var indexTask: Task<Void, Never>?
@@ -51,38 +56,56 @@ final class QuoteRefresher: ObservableObject {
         indexService: IndexService,
         clock: MarketClock,
         quoteCacheRepo: QuoteCacheRepository? = nil,
+        fxCacheRepo: FXCacheRepository? = nil,
+        holdingsRepo: HoldingsRepository? = nil,
+        settingsRepo: SettingsRepository? = nil,
         alertEngine: AlertEngine? = nil
     ) {
         self.service = service
         self.indexService = indexService
         self.clock = clock
         self.quoteCacheRepo = quoteCacheRepo
+        self.fxCacheRepo = fxCacheRepo
+        self.holdingsRepo = holdingsRepo
+        self.settingsRepo = settingsRepo
         self.alertEngine = alertEngine
 
         // 同步从磁盘 seed quotes,这样 popover 一打开就有数据。
-        // 实际 snapshot 在 seedSnapshotFromCacheIfNeeded() 里异步算(需要 FX)。
-        if let cached = quoteCacheRepo?.loadAll(), !cached.isEmpty {
-            self.quotes = cached
-            Log.quote.info("seeded \(cached.count, privacy: .public) quotes from disk")
+        let cachedQuotes = quoteCacheRepo?.loadAll() ?? [:]
+        if !cachedQuotes.isEmpty {
+            self.quotes = cachedQuotes
+            Log.quote.info("seeded \(cachedQuotes.count, privacy: .public) quotes from disk")
         } else {
             Log.quote.info("quote disk cache is empty")
+        }
+
+        // 同步从磁盘读 FX + 持仓,合成首屏 snapshot。
+        // 这样 popover 一打开 totalAssets / 累计盈亏立即正确,不用等 warmup 完成。
+        if let holdingsRepo = holdingsRepo, let settingsRepo = settingsRepo {
+            let holdings = (try? holdingsRepo.all()) ?? []
+            let fxCache = fxCacheRepo?.loadAll() ?? [:]
+            let converter = CurrencyConverter(fromCache: fxCache)
+            let baseCurrency = settingsRepo.baseCurrency
+            self.snapshot = PortfolioService.computeSnapshotSync(
+                holdings: holdings,
+                quotes: cachedQuotes,
+                converter: converter,
+                baseCurrency: baseCurrency
+            )
+            if !cachedQuotes.isEmpty || !fxCache.isEmpty {
+                self.snapshotIsFromCache = true
+            }
         }
 
         observeSystem()
     }
 
-    /// 应用启动早期(在 FX warmup 之后)调一次,**同步合成**一个"基于磁盘缓存"的 snapshot,
-    /// 让 popover 第一次打开就有完整持仓 + 本位币换算。
-    /// 缓存为空时也会跑一次:持仓行会用 costPrice 作 fallback,至少行能展示出来。
-    ///
-    /// 必须在 `start()` 之前 await 完,否则首次 tick 会把 lastUpdated 占住,
-    /// 这边的 guard 直接跳过,首屏又变回空白。
-    func seedSnapshotFromCacheIfNeeded() async {
-        let cached = quotes
-        let snap = await service.computeSnapshot(usingCachedQuotes: cached)
+    /// 一旦网络拉到新 FX 值,可以再用最新 FX 重算一次 snapshot(init 阶段用的是磁盘 FX)。
+    /// 不阻塞 caller,在 lastUpdated 还没被 tick 占用时才覆盖。
+    func reseedSnapshotWithFreshFX() async {
+        let snap = await service.computeSnapshot(usingCachedQuotes: quotes)
         guard lastUpdated == nil else { return }
         snapshot = snap
-        if !cached.isEmpty { snapshotIsFromCache = true }
     }
 
     func setOffline(_ value: Bool) {
@@ -150,8 +173,8 @@ final class QuoteRefresher: ObservableObject {
         let next: Pace
         if sleeping || offline {
             next = .sleeping
-        } else if !clock.anyOpen() {
-            // 全市场休市:完全暂停自动刷新,用户可点底部刷新按钮手动拉
+        } else if !clock.anyOpen() && pauseWhenClosed {
+            // 全市场休市 + 开关开着:完全暂停自动刷新,用户可点底部刷新按钮手动拉
             next = .sleeping
         } else if popoverOpen {
             next = .popoverOpen
@@ -177,13 +200,14 @@ final class QuoteRefresher: ObservableObject {
         }
     }
 
-    /// 指数轮询:跑独立 Task,间隔比股票长(15s),休眠/离线时暂停。
+    /// 指数轮询:跑独立 Task,间隔比股票长(15s),休眠/离线/全市场休市时暂停。
     private func runIndexLoop() async {
         await tickIndices()
         while !Task.isCancelled {
             try? await Task.sleep(nanoseconds: 15_000_000_000)
             if Task.isCancelled { break }
             if sleeping || offline { continue }
+            if !clock.anyOpen() && pauseWhenClosed { continue }
             await tickIndices()
         }
     }

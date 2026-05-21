@@ -78,6 +78,9 @@ final class DependencyContainer {
             indexService: indexService,
             clock: clock,
             quoteCacheRepo: quoteCacheRepo,
+            fxCacheRepo: fxCacheRepo,
+            holdingsRepo: holdingsRepo,
+            settingsRepo: settingsRepo,
             alertEngine: alertEngine
         )
         self.networkMonitor = NetworkMonitor()
@@ -91,23 +94,23 @@ final class DependencyContainer {
         return container
     }
 
-    /// 应用启动的"冷启动序列",必须严格按以下顺序跑:
-    ///   1. FXService.seedFromDisk()        ← 磁盘汇率灌进内存
-    ///   2. refresher.seedSnapshotFromCacheIfNeeded() ← 基于本地持仓+缓存行情合成首屏 snapshot
-    ///   3. refresher.start()                ← 启动 tick 循环(此时 lastUpdated 还没设)
-    ///   4. fx 网络拉新值(后台)+ 自动刷新 timer
-    /// 一旦顺序乱了,tick 先跑就会把 lastUpdated 写上,seed 的 guard 会跳过,
-    /// 用户首次打开 popover 还是空。
+    /// 应用启动后的轻量启动:首屏 snapshot 已在 QuoteRefresher.init 用磁盘缓存
+    /// 同步合成,popover 现在打开就有完整数据。warmup 只剩:
+    ///   - 把用户设置传给 refresher / fx
+    ///   - FXService 内部 seed disk(actor 内部走 disk → cache)
+    ///   - start tick 循环
+    ///   - 后台拉新 FX
     func warmup() async {
         let interval = settingsRepo.fxRefreshInterval
         await fx.setAutoRefreshInterval(interval)
         refresher.tickerInterval = TimeInterval(settingsRepo.quoteRefreshInterval)
+        refresher.pauseWhenClosed = settingsRepo.pauseRefreshWhenClosed
 
-        // 同步动作:磁盘 seed,必须先于 start() 完成
+        // FXService 也 seed 一遍(refresher.init 已经读过磁盘,但 FXService 自己
+        // 内部的 cache dict 还是空的;后续 PortfolioService 走 await fx.convert
+        // 需要它有数据)
         await fx.seedFromDisk()
-        await refresher.seedSnapshotFromCacheIfNeeded()
 
-        // 现在再启动 tick 循环
         refresher.start()
 
         // 后台拉新值
