@@ -14,6 +14,7 @@ final class DependencyContainer {
     let finnhub: FinnhubProvider
     let provider: QuoteProvider
     let indexService: IndexService
+    let symbolSearch: SymbolSearch
     let fx: FXService
     let portfolioService: PortfolioService
     let clock: MarketClock
@@ -53,6 +54,7 @@ final class DependencyContainer {
         self.orchestrator = orchestrator
         self.provider = orchestrator
         self.indexService = IndexService()
+        self.symbolSearch = SymbolSearch()
 
         let fxProvider = EastMoneyFXProvider()
         let fx = FXService(provider: fxProvider)

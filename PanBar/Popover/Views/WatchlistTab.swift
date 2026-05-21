@@ -4,6 +4,7 @@ struct WatchlistTab: View {
     @EnvironmentObject var vm: PopoverViewModel
     @EnvironmentObject var refresher: QuoteRefresher
     @EnvironmentObject var appearance: AppearancePreferences
+    @EnvironmentObject var prefs: TickerPreferences
 
     var body: some View {
         ScrollView {
@@ -12,7 +13,7 @@ struct WatchlistTab: View {
                     emptyState
                 } else {
                     ForEach(vm.watchlist) { item in
-                        WatchRow(item: item, quote: refresher.quotes[item.symbol], density: appearance.density)
+                        WatchRow(item: item, quote: refresher.quotes[item.symbol], density: appearance.density, scheme: prefs.colorScheme)
                             .contextMenu {
                                 Button(L("action.openInBrowser", comment: "")) {
                                     openInBrowser(item.symbol)
@@ -58,6 +59,7 @@ private struct WatchRow: View {
     let item: WatchItem
     let quote: Quote?
     let density: PopoverDensity
+    let scheme: TickerColorScheme
 
     var body: some View {
         HStack {
@@ -77,7 +79,7 @@ private struct WatchRow: View {
                         .monospacedDigit()
                     Text(String(format: "%+.2f%%", q.changePct * 100))
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(q.change >= 0 ? .red : .green)
+                        .foregroundColor(q.change >= 0 ? SemanticColors.up(scheme: scheme) : SemanticColors.down(scheme: scheme))
                         .monospacedDigit()
                 }
             } else {

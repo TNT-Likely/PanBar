@@ -131,13 +131,11 @@ final class QuoteRefresher: ObservableObject {
     private func tick() async {
         do {
             let snap = try await service.computeSnapshot()
-            let quoteMap = snap.positions.reduce(into: [SymbolID: Quote]()) { acc, pos in
-                if let q = pos.quote { acc[pos.holding.symbol] = q }
-            }
             await MainActor.run {
                 self.snapshot = snap
-                if !quoteMap.isEmpty {
-                    self.quotes.merge(quoteMap) { _, new in new }
+                if !snap.allQuotes.isEmpty {
+                    // 包含持仓 + 自选所有 symbol 的最新行情
+                    self.quotes.merge(snap.allQuotes) { _, new in new }
                 }
                 self.lastUpdated = Date()
                 self.lastError = nil

@@ -590,6 +590,30 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "指数加载中…" } }
       }
     },
+    "indices.failed" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Failed to load indices" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "指数加载失败" } }
+      }
+    },
+    "action.retry" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Retry" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重试" } }
+      }
+    },
+    "search.placeholder" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Search: code / name / pinyin (e.g. 600519, AAPL, mtgz)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "搜索:代码 / 名称 / 拼音(如 600519、AAPL、mtgz)" } }
+      }
+    },
+    "search.noResults" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No matches" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无匹配结果" } }
+      }
+    },
     "action.importCSV" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Import CSV" } },

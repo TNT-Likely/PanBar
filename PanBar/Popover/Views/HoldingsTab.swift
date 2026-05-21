@@ -4,6 +4,7 @@ struct HoldingsTab: View {
     @EnvironmentObject var vm: PopoverViewModel
     @EnvironmentObject var refresher: QuoteRefresher
     @EnvironmentObject var appearance: AppearancePreferences
+    @EnvironmentObject var prefs: TickerPreferences
 
     var body: some View {
         ScrollView {
@@ -12,7 +13,7 @@ struct HoldingsTab: View {
                     emptyState
                 } else {
                     ForEach(refresher.snapshot.positions) { pos in
-                        HoldingRow(position: pos, density: appearance.density)
+                        HoldingRow(position: pos, density: appearance.density, scheme: prefs.colorScheme)
                             .contextMenu {
                                 Button(L("action.openInBrowser", comment: "")) {
                                     openInBrowser(pos.holding.symbol)
@@ -61,6 +62,7 @@ struct HoldingsTab: View {
 private struct HoldingRow: View {
     let position: HoldingPosition
     let density: PopoverDensity
+    let scheme: TickerColorScheme
 
     var body: some View {
         let h = position.holding
@@ -116,20 +118,18 @@ private struct HoldingRow: View {
     }
 
     private func pnlColor(_ value: Decimal) -> Color {
-        if value > 0 { return .red }    // East scheme
-        if value < 0 { return .green }
-        return .secondary
+        SemanticColors.directional(value, scheme: scheme)
     }
 
     private func pctPill(_ pct: Double) -> some View {
         let text = String(format: "%+.2f%%", pct * 100)
-        let color: Color = pct >= 0 ? .red : .green
+        let color: Color = pct >= 0 ? SemanticColors.up(scheme: scheme) : SemanticColors.down(scheme: scheme)
         return Text(text)
             .font(.system(size: 10, weight: .semibold))
             .foregroundColor(color)
             .padding(.horizontal, 5)
             .padding(.vertical, 1)
-            .background(color.opacity(0.15))
+            .background(color.opacity(0.18))
             .clipShape(RoundedRectangle(cornerRadius: 3))
             .monospacedDigit()
     }

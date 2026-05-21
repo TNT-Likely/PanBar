@@ -105,6 +105,7 @@ actor PortfolioService {
             allTimePnL: allTimePnL,
             allTimePnLPct: allTimePnLPct,
             positions: positions,
+            allQuotes: quotes,
             asOf: Date()
         )
     }

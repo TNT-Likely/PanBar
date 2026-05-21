@@ -28,11 +28,29 @@ struct PortfolioPane: View {
                 TableColumn(L("col.symbol", comment: "")) { (h: Holding) in
                     Text(h.symbol.market == .us ? h.symbol.code.uppercased() : h.symbol.code)
                         .monospacedDigit()
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) { editing = h }
                 }
-                TableColumn(L("col.name", comment: "")) { (h: Holding) in Text(h.name) }
-                TableColumn(L("col.market", comment: "")) { (h: Holding) in Text(h.symbol.market.displayName) }
-                TableColumn(L("col.qty", comment: "")) { (h: Holding) in Text("\(h.quantity)").monospacedDigit() }
-                TableColumn(L("col.cost", comment: "")) { (h: Holding) in Text(h.currency.format(h.costPrice)).monospacedDigit() }
+                TableColumn(L("col.name", comment: "")) { (h: Holding) in
+                    Text(h.name)
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) { editing = h }
+                }
+                TableColumn(L("col.market", comment: "")) { (h: Holding) in
+                    Text(h.symbol.market.displayName)
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) { editing = h }
+                }
+                TableColumn(L("col.qty", comment: "")) { (h: Holding) in
+                    Text("\(h.quantity)").monospacedDigit()
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) { editing = h }
+                }
+                TableColumn(L("col.cost", comment: "")) { (h: Holding) in
+                    Text(h.currency.format(h.costPrice)).monospacedDigit()
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) { editing = h }
+                }
                 TableColumn(L("col.inTicker", comment: "")) { (h: Holding) in
                     Toggle("", isOn: Binding(
                         get: { h.inTicker },
@@ -126,10 +144,18 @@ private struct HoldingEditorSheet: View {
     @State private var costPrice: String = ""
     @State private var error: String?
 
+    @StateObject private var searchVM = SymbolSearchViewModel()
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(initial == nil ? L("holdings.addTitle", comment: "") : L("holdings.editTitle", comment: ""))
                 .font(.title3)
+
+            SymbolSearchField(vm: searchVM, onPick: { result in
+                market = result.symbol.market
+                code = result.symbol.code
+                name = result.name
+            })
 
             Form {
                 Picker(L("col.market", comment: ""), selection: $market) {
@@ -159,8 +185,11 @@ private struct HoldingEditorSheet: View {
             }
         }
         .padding(24)
-        .frame(width: 420)
-        .onAppear(perform: prefill)
+        .frame(width: 460)
+        .onAppear {
+            prefill()
+            searchVM.bind(container?.symbolSearch)
+        }
     }
 
     private func prefill() {

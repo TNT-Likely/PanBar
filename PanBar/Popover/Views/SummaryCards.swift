@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SummaryCards: View {
     let snapshot: PortfolioSnapshot
+    @EnvironmentObject var prefs: TickerPreferences
 
     var body: some View {
         HStack(spacing: 8) {
@@ -39,8 +40,8 @@ struct SummaryCards: View {
 
     private func toneColor(_ t: Tone) -> Color {
         switch t {
-        case .up:      return Color.red          // East default
-        case .down:    return Color.green
+        case .up:      return SemanticColors.up(scheme: prefs.colorScheme)
+        case .down:    return SemanticColors.down(scheme: prefs.colorScheme)
         case .neutral: return .primary
         }
     }

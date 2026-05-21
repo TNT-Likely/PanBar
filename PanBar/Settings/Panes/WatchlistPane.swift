@@ -26,9 +26,19 @@ struct WatchlistPane: View {
             Table(items) {
                 TableColumn(L("col.symbol", comment: "")) { (w: WatchItem) in
                     Text(w.symbol.market == .us ? w.symbol.code.uppercased() : w.symbol.code)
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) { editing = w }
                 }
-                TableColumn(L("col.name", comment: "")) { (w: WatchItem) in Text(w.name) }
-                TableColumn(L("col.market", comment: "")) { (w: WatchItem) in Text(w.symbol.market.displayName) }
+                TableColumn(L("col.name", comment: "")) { (w: WatchItem) in
+                    Text(w.name)
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) { editing = w }
+                }
+                TableColumn(L("col.market", comment: "")) { (w: WatchItem) in
+                    Text(w.symbol.market.displayName)
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) { editing = w }
+                }
                 TableColumn(L("col.inTicker", comment: "")) { (w: WatchItem) in
                     Toggle("", isOn: Binding(
                         get: { w.inTicker },
@@ -119,10 +129,19 @@ private struct WatchEditorSheet: View {
     @State private var name: String = ""
     @State private var error: String?
 
+    @StateObject private var searchVM = SymbolSearchViewModel()
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(initial == nil ? L("watchlist.addTitle", comment: "") : L("watchlist.editTitle", comment: ""))
                 .font(.title3)
+
+            SymbolSearchField(vm: searchVM, onPick: { result in
+                market = result.symbol.market
+                code = result.symbol.code
+                name = result.name
+            })
+
             Form {
                 Picker(L("col.market", comment: ""), selection: $market) {
                     ForEach(Market.allCases, id: \.self) { m in
@@ -144,8 +163,11 @@ private struct WatchEditorSheet: View {
             }
         }
         .padding(24)
-        .frame(width: 420)
-        .onAppear(perform: prefill)
+        .frame(width: 460)
+        .onAppear {
+            prefill()
+            searchVM.bind(container?.symbolSearch)
+        }
     }
 
     private func prefill() {

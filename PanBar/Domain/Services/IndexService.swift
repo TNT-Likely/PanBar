@@ -20,8 +20,11 @@ actor IndexService {
             URLQueryItem(name: "_", value: "\(Int(Date().timeIntervalSince1970 * 1000))")
         ]
         guard let url = comps.url else { return [] }
+        Log.quote.info("index fetch: \(url.absoluteString, privacy: .public)")
         let data = try await http.fetchData(url: url)
-        return try parse(data, indices: indices)
+        let parsed = try parse(data, indices: indices)
+        Log.quote.info("index parsed: \(parsed.count) items")
+        return parsed
     }
 
     private func parse(_ data: Data, indices: [IndexDescriptor]) throws -> [IndexQuote] {

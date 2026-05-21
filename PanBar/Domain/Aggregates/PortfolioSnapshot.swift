@@ -27,6 +27,8 @@ struct PortfolioSnapshot: Equatable, Sendable {
     let allTimePnL: Decimal
     let allTimePnLPct: Double
     let positions: [HoldingPosition]
+    /// 全部本轮拉到的行情(持仓 + 自选合并),供菜单栏 ticker 和 Watchlist 行使用。
+    let allQuotes: [SymbolID: Quote]
     let asOf: Date
 
     static let empty = PortfolioSnapshot(
@@ -38,6 +40,7 @@ struct PortfolioSnapshot: Equatable, Sendable {
         allTimePnL: 0,
         allTimePnLPct: 0,
         positions: [],
+        allQuotes: [:],
         asOf: Date()
     )
 }

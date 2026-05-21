@@ -24,7 +24,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 holdingsRepo: container.holdingsRepo,
                 watchlistRepo: container.watchlistRepo,
                 settingsRepo: container.settingsRepo,
-                appearancePrefs: container.appearancePrefs
+                appearancePrefs: container.appearancePrefs,
+                tickerPrefs: container.tickerPrefs
             )
             self.popoverController = popover
 

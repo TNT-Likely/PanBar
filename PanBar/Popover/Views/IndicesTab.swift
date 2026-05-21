@@ -2,6 +2,7 @@ import SwiftUI
 
 struct IndicesTab: View {
     @Environment(\.container) private var container
+    @EnvironmentObject var prefs: TickerPreferences
     @State private var quotes: [IndexQuote] = []
     @State private var loading: Bool = false
     @State private var error: String?
@@ -18,7 +19,7 @@ struct IndicesTab: View {
                     emptyState
                 } else {
                     ForEach(quotes) { q in
-                        IndexRow(quote: q)
+                        IndexRow(quote: q, scheme: prefs.colorScheme)
                         Divider().opacity(0.4)
                     }
                 }
@@ -35,14 +36,21 @@ struct IndicesTab: View {
 
     private var emptyState: some View {
         VStack(spacing: 8) {
-            Image(systemName: "chart.line.uptrend.xyaxis")
+            Image(systemName: error == nil ? "chart.line.uptrend.xyaxis" : "exclamationmark.triangle")
                 .font(.system(size: 28))
                 .foregroundColor(.secondary)
-            Text(L("indices.empty", comment: ""))
+            Text(error == nil ? L("indices.empty", comment: "") : L("indices.failed", comment: ""))
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
             if let err = error {
-                Text(err).font(.system(size: 10)).foregroundColor(.red).padding(.horizontal, 20)
+                Text(err).font(.system(size: 10)).foregroundColor(.red)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
+                Button(L("action.retry", comment: "")) {
+                    Task { await refresh() }
+                }
+                .controlSize(.small)
+                .padding(.top, 4)
             }
         }
         .frame(maxWidth: .infinity)
@@ -83,6 +91,7 @@ struct IndicesTab: View {
 
 private struct IndexRow: View {
     let quote: IndexQuote
+    let scheme: TickerColorScheme
 
     var body: some View {
         HStack {
@@ -99,13 +108,14 @@ private struct IndexRow: View {
                     .font(.system(size: 13, weight: .semibold))
                     .monospacedDigit()
                 HStack(spacing: 4) {
+                    let color: Color = quote.change >= 0 ? SemanticColors.up(scheme: scheme) : SemanticColors.down(scheme: scheme)
                     Text(signed(quote.change))
                         .font(.system(size: 10))
-                        .foregroundColor(quote.change >= 0 ? .red : .green)
+                        .foregroundColor(color)
                         .monospacedDigit()
                     Text(String(format: "%+.2f%%", quote.changePct * 100))
                         .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(quote.change >= 0 ? .red : .green)
+                        .foregroundColor(color)
                         .monospacedDigit()
                 }
             }

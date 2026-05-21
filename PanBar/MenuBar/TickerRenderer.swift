@@ -20,22 +20,9 @@ struct TickerRenderer {
     var scheme: TickerColorScheme = .east
     var font: NSFont = NSFont.menuBarFont(ofSize: 0)
 
-    /// 涨/跌色。
-    private var upColor: NSColor {
-        switch scheme {
-        case .east: return NSColor.systemRed
-        case .west: return NSColor.systemGreen
-        case .mono: return NSColor.labelColor
-        }
-    }
-
-    private var downColor: NSColor {
-        switch scheme {
-        case .east: return NSColor.systemGreen
-        case .west: return NSColor.systemRed
-        case .mono: return NSColor.labelColor
-        }
-    }
+    /// 涨色 / 跌色:走 SemanticColors,与 Popover 保持一致 + 菜单栏对比度优化。
+    private var upColor: NSColor { SemanticColors.upNS(scheme: scheme) }
+    private var downColor: NSColor { SemanticColors.downNS(scheme: scheme) }
 
     /// 渲染 ticker 串。
     /// 多项之间用 "  ·  " 分隔。

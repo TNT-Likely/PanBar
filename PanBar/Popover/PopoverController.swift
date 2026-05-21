@@ -14,7 +14,8 @@ final class PopoverController {
         holdingsRepo: HoldingsRepository,
         watchlistRepo: WatchlistRepository,
         settingsRepo: SettingsRepository,
-        appearancePrefs: AppearancePreferences
+        appearancePrefs: AppearancePreferences,
+        tickerPrefs: TickerPreferences
     ) {
         self.refresher = refresher
         self.viewModel = PopoverViewModel(
@@ -32,6 +33,7 @@ final class PopoverController {
                 .environmentObject(viewModel)
                 .environmentObject(refresher)
                 .environmentObject(appearancePrefs)
+                .environmentObject(tickerPrefs)
                 .frame(width: 360, height: 520)
         )
         self.popover = popover
