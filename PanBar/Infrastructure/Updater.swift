@@ -4,9 +4,9 @@ import AppKit
 
 /// Sparkle 自动更新封装。
 ///
-/// - Feed URL 配置在 Info.plist 的 `SUFeedURL`
+/// - Feed URL 配置在 Info.plist 的 `SUFeedURL`(指向 GitHub Pages 上的 appcast.xml)
 /// - 公钥 ED25519 在 `SUPublicEDKey`(私钥保管在签发机器,见 docs/RELEASING.md)
-/// - DEBUG 构建关闭自动检查,避免开发期反复弹窗
+/// - 永远启动 updater,DEBUG 仅关闭定时检查(用户手动点"检查更新"始终生效)
 @MainActor
 final class Updater: NSObject {
     static let shared = Updater()
@@ -15,25 +15,23 @@ final class Updater: NSObject {
 
     private override init() {
         super.init()
-        let startsAutomatic: Bool
-        #if DEBUG
-        startsAutomatic = false
-        #else
-        startsAutomatic = true
-        #endif
+        // ⚠ 必须 startingUpdater: true,否则后续 checkForUpdates() 完全 no-op。
+        // DEBUG 关掉的是"自动定时检查",不是 updater 本身。
         controller = SPUStandardUpdaterController(
-            startingUpdater: startsAutomatic,
+            startingUpdater: true,
             updaterDelegate: self,
             userDriverDelegate: nil
         )
+        #if DEBUG
+        controller.updater.automaticallyChecksForUpdates = false
+        #endif
     }
 
-    /// 用户手动触发"检查更新"。
+    /// 用户手动触发"检查更新"。Sparkle 会弹出自己的进度 / 结果对话框。
     func checkForUpdates() {
         controller.checkForUpdates(nil)
     }
 
-    /// 是否启用自动检查。
     var automaticChecksEnabled: Bool {
         get { controller.updater.automaticallyChecksForUpdates }
         set { controller.updater.automaticallyChecksForUpdates = newValue }
@@ -42,7 +40,7 @@ final class Updater: NSObject {
 
 extension Updater: SPUUpdaterDelegate {
     nonisolated func feedURLString(for updater: SPUUpdater) -> String? {
-        // 优先用 Info.plist 中的,如果以后要切换 channel 可以在这里覆盖。
+        // 走 Info.plist SUFeedURL
         return nil
     }
 }
