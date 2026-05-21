@@ -57,8 +57,11 @@ jobs:
       - name: Archive & export
         env:
           VERSION: ${{ steps.ver.outputs.version }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           mkdir -p build/Release
+          # 渲染 export-options.plist 里的 teamID 占位符
+          sed "s/__TEAM_ID__/$TEAM_ID/g" scripts/export-options.plist > build/export-options.plist
           xcodebuild \
             -project PanBar.xcodeproj \
             -scheme PanBar \
@@ -66,11 +69,14 @@ jobs:
             -archivePath build/PanBar.xcarchive \
             MARKETING_VERSION=$VERSION \
             CURRENT_PROJECT_VERSION=$(date +%s) \
+            DEVELOPMENT_TEAM=$TEAM_ID \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
             archive
           xcodebuild \
             -exportArchive \
             -archivePath build/PanBar.xcarchive \
-            -exportOptionsPlist scripts/export-options.plist \
+            -exportOptionsPlist build/export-options.plist \
             -exportPath build/Release
 
       - name: Notarize & staple
