@@ -100,14 +100,22 @@ struct PopoverRoot: View {
     private var footer: some View {
         HStack(spacing: 12) {
             Button(action: { refresher.refreshNow() }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.clockwise")
+                HStack(spacing: 5) {
+                    if refresher.isRefreshing {
+                        ProgressView()
+                            .controlSize(.mini)
+                            .scaleEffect(0.55)
+                            .frame(width: 12, height: 12)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                    }
                     Text(footerStatus)
                 }
                 .font(.system(size: 11))
             }
             .buttonStyle(.plain)
-            .foregroundColor(.secondary)
+            .foregroundColor(footerStatusColor)
+            .disabled(refresher.isRefreshing)
 
             Spacer()
             Text(AppVersion.displayShort)
@@ -127,11 +135,24 @@ struct PopoverRoot: View {
         if let err = refresher.lastError, !err.isEmpty {
             return L("footer.offline", comment: "")
         }
+        // 还没拿到任何 fresh 数据,但有磁盘 seed 进来的旧数据
+        if refresher.snapshotIsFromCache {
+            return L("footer.cached", comment: "")
+        }
+        if refresher.isRefreshing && refresher.lastUpdated == nil {
+            return L("footer.refreshing", comment: "")
+        }
         if let t = refresher.lastUpdated {
             let interval = Int(Date().timeIntervalSince(t))
             return String(format: L("footer.updated", comment: ""), interval)
         }
         return L("footer.loading", comment: "")
+    }
+
+    private var footerStatusColor: Color {
+        // cached 时给点黄色作弱提示,让用户知道这不是最新值
+        if refresher.snapshotIsFromCache { return .orange.opacity(0.85) }
+        return .secondary
     }
 
     private func openSettings() {

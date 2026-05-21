@@ -122,6 +122,18 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "加载中…" } }
       }
     },
+    "footer.refreshing" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Refreshing…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在刷新…" } }
+      }
+    },
+    "footer.cached" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cached data, refreshing…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "缓存数据,刷新中…" } }
+      }
+    },
     "footer.offline" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Offline" } },
@@ -1020,6 +1032,126 @@
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Data Sources" } },
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "数据源" } }
+      }
+    },
+    "settings.fx" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "FX Rates" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "汇率" } }
+      }
+    },
+    "fx.empty" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No rates yet. Tap Refresh to load." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "还没有汇率数据,点「立即刷新」加载。" } }
+      }
+    },
+    "fx.refreshNow" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Refresh now" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "立即刷新" } }
+      }
+    },
+    "fx.neverFetched" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Never fetched" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "尚未拉取" } }
+      }
+    },
+    "fx.lastFetched" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Last fetched %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "上次拉取于 %@" } }
+      }
+    },
+    "fx.autoRefresh" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Auto-refresh" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "自动刷新" } }
+      }
+    },
+    "fx.autoRefresh.interval" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Interval" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "刷新间隔" } }
+      }
+    },
+    "fx.autoRefresh.hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rates only change a few cents per day for most currencies — 1h is plenty. Set to Off if you'd rather refresh manually." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "汇率变化通常很小,1 小时一次足够。也可以关掉改为手动刷新。" } }
+      }
+    },
+    "fx.interval.off" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Off" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭" } }
+      }
+    },
+    "fx.interval.5min" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Every 5 minutes" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每 5 分钟" } }
+      }
+    },
+    "fx.interval.15min" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Every 15 minutes" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每 15 分钟" } }
+      }
+    },
+    "fx.interval.1h" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Every hour" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每 1 小时" } }
+      }
+    },
+    "fx.interval.6h" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Every 6 hours" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每 6 小时" } }
+      }
+    },
+    "fx.interval.1d" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Every day" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每天" } }
+      }
+    },
+    "fx.source" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Data Source" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "数据源" } }
+      }
+    },
+    "fx.source.eastmoney" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "EastMoney (USDCNY / HKDCNY). Other directions are derived via CNY." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "东方财富(USDCNY / HKDCNY)。其它方向以 CNY 为枢轴换算。" } }
+      }
+    },
+    "fx.time.seconds" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%ds ago" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 秒前" } }
+      }
+    },
+    "fx.time.minutes" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%dm ago" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 分钟前" } }
+      }
+    },
+    "fx.time.hours" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%dh ago" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 小时前" } }
+      }
+    },
+    "fx.time.days" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%dd ago" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 天前" } }
       }
     },
     "settings.theme" : {
