@@ -25,6 +25,9 @@ private struct GeneralPaneContent: View {
     @State private var baseCurrency: Currency = .cny
     @State private var browserTemplate: String = BrowserURLBuilder.Template.xueqiu.rawValue
     @State private var hideOnScreenShare: Bool = true
+    @State private var proxyMode: NetworkConfig.ProxyMode = .system
+    @State private var proxyHost: String = ""
+    @State private var proxyPortText: String = "7890"
 
     /// 语言:不走 @State,直接读写 storage,避免 .onAppear 触发 .onChange
     private var languageBinding: Binding<LanguageManager.Choice> {
@@ -97,6 +100,35 @@ private struct GeneralPaneContent: View {
                 }
             }
 
+            Section(header: Text(L("settings.proxySection", comment: "")).font(.headline)) {
+                Picker(L("settings.proxyMode", comment: ""), selection: $proxyMode) {
+                    ForEach(NetworkConfig.ProxyMode.allCases, id: \.self) { m in
+                        Text(m.displayName).tag(m)
+                    }
+                }
+                .onChange(of: proxyMode) { _ in applyProxy() }
+
+                if proxyMode == .manual {
+                    HStack {
+                        Text(L("settings.proxyHost", comment: ""))
+                        TextField("127.0.0.1", text: $proxyHost)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit { applyProxy() }
+                    }
+                    HStack {
+                        Text(L("settings.proxyPort", comment: ""))
+                        TextField("7890", text: $proxyPortText)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit { applyProxy() }
+                    }
+                    Button(L("settings.proxyApply", comment: ""), action: applyProxy)
+                        .controlSize(.small)
+                }
+                Text(L("settings.proxy.hint", comment: ""))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
             Section(header: Text(L("settings.privacySection", comment: "")).font(.headline)) {
                 Toggle(L("settings.hideOnScreenShare", comment: ""), isOn: $hideOnScreenShare)
                     .onChange(of: hideOnScreenShare) { value in
@@ -149,7 +181,18 @@ private struct GeneralPaneContent: View {
             baseCurrency = container.settingsRepo.baseCurrency
             browserTemplate = container.settingsRepo.string(BrowserURLBuilder.templateKey) ?? BrowserURLBuilder.Template.xueqiu.rawValue
             hideOnScreenShare = container.settingsRepo.string(SettingsRepository.Keys.hideOnScreenShare) != "0"
+            proxyMode = container.settingsRepo.proxyMode
+            proxyHost = container.settingsRepo.proxyHost
+            proxyPortText = "\(container.settingsRepo.proxyPort)"
         }
+    }
+
+    private func applyProxy() {
+        let port = Int(proxyPortText) ?? 0
+        try? container.settingsRepo.setProxyMode(proxyMode)
+        try? container.settingsRepo.setProxyHost(proxyHost)
+        try? container.settingsRepo.setProxyPort(port)
+        NetworkConfig.apply(mode: proxyMode, host: proxyHost, port: port)
     }
 }
 

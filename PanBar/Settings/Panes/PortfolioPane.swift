@@ -5,6 +5,7 @@ struct PortfolioPane: View {
     @State private var holdings: [Holding] = []
     @State private var showAdd: Bool = false
     @State private var editing: Holding?
+    @State private var selection: Set<Holding.ID> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -24,7 +25,7 @@ struct PortfolioPane: View {
                 }
             }
 
-            Table(holdings) {
+            Table(holdings, selection: $selection) {
                 TableColumn(L("col.symbol", comment: "")) { (h: Holding) in
                     Text(h.symbol.market == .us ? h.symbol.code.uppercased() : h.symbol.code)
                         .monospacedDigit()

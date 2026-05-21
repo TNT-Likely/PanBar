@@ -6,6 +6,7 @@ struct AlertsPane: View {
     @State private var alerts: [Alert] = []
     @State private var showAdd: Bool = false
     @State private var editing: Alert?
+    @State private var selection: Set<Alert.ID> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -23,7 +24,7 @@ struct AlertsPane: View {
 
             permissionBanner
 
-            Table(alerts) {
+            Table(alerts, selection: $selection) {
                 TableColumn(L("col.symbol", comment: "")) { (a: Alert) in
                     Text(a.symbol.market == .us ? a.symbol.code.uppercased() : a.symbol.code)
                         .contentShape(Rectangle())

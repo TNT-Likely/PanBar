@@ -1670,6 +1670,60 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每 10 秒(慢)" } }
       }
     },
+    "settings.proxySection" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Network proxy" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "网络代理" } }
+      }
+    },
+    "settings.proxyMode" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Proxy" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "代理" } }
+      }
+    },
+    "settings.proxyHost" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Host" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "主机" } }
+      }
+    },
+    "settings.proxyPort" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Port" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "端口" } }
+      }
+    },
+    "settings.proxyApply" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Apply" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "应用" } }
+      }
+    },
+    "settings.proxy.hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Applies to all data sources (Tencent / EastMoney / Yahoo / Finnhub) and update checks." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "对全部数据源(腾讯 / 东方财富 / Yahoo / Finnhub)和检查更新都生效。" } }
+      }
+    },
+    "proxy.mode.off" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Off (direct connection)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭(直连)" } }
+      }
+    },
+    "proxy.mode.system" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Follow system (default)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "跟随系统(默认)" } }
+      }
+    },
+    "proxy.mode.manual" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Custom HTTP proxy" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "自定义 HTTP 代理" } }
+      }
+    },
     "about.reportIssue" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Report an Issue" } },

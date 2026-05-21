@@ -69,6 +69,9 @@ struct SettingsRepository {
         static let tickerDisplayMode = "ticker_display_mode"
         static let tickerMinimalMetric = "ticker_minimal_metric"
         static let tickerCarouselDwell = "ticker_carousel_dwell"
+        static let proxyMode = "proxy_mode"            // off / system / manual
+        static let proxyHost = "proxy_host"
+        static let proxyPort = "proxy_port"
 
         /// 拼出市场对应的 override key,避免外部各自拼字符串
         static func marketOverride(_ market: Market) -> String {
@@ -99,6 +102,22 @@ struct SettingsRepository {
     func setQuoteRefreshInterval(_ seconds: Int) throws {
         try set(Keys.quoteRefreshInterval, "\(max(3, seconds))")
     }
+
+    /// 代理模式。默认 system(跟随 macOS 系统代理)。
+    var proxyMode: NetworkConfig.ProxyMode {
+        if let s = string(Keys.proxyMode), let m = NetworkConfig.ProxyMode(rawValue: s) { return m }
+        return .system
+    }
+
+    func setProxyMode(_ mode: NetworkConfig.ProxyMode) throws {
+        try set(Keys.proxyMode, mode.rawValue)
+    }
+
+    var proxyHost: String { string(Keys.proxyHost) ?? "" }
+    func setProxyHost(_ host: String) throws { try set(Keys.proxyHost, host) }
+
+    var proxyPort: Int { Int(string(Keys.proxyPort) ?? "") ?? 7890 }
+    func setProxyPort(_ port: Int) throws { try set(Keys.proxyPort, "\(max(1, port))") }
 
     /// 三个市场都休市时是否完全暂停自动刷新。默认 true(开)。
     var pauseRefreshWhenClosed: Bool {

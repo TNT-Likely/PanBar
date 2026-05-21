@@ -16,11 +16,17 @@ enum HTTPError: Error, CustomStringConvertible {
 
 /// 极简 HTTPClient,负责构造请求 + 注入通用 header + 解码。
 struct HTTPClient {
-    let session: URLSession
+    /// nil 表示动态使用 NetworkConfig.sharedSession(每次请求重新读),
+    /// 这样设置里改代理后所有 provider 立即生效,不用重建实例。
+    let overrideSession: URLSession?
     let defaultHeaders: [String: String]
 
-    init(session: URLSession = .shared, defaultHeaders: [String: String] = [:]) {
-        self.session = session
+    var session: URLSession {
+        overrideSession ?? NetworkConfig.sharedSession
+    }
+
+    init(session: URLSession? = nil, defaultHeaders: [String: String] = [:]) {
+        self.overrideSession = session
         var headers = defaultHeaders
         if headers["User-Agent"] == nil {
             headers["User-Agent"] = Self.defaultUA

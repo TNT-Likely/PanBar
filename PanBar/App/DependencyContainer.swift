@@ -38,6 +38,14 @@ final class DependencyContainer {
         self.fxCacheRepo = FXCacheRepository(dbPool: database.dbPool)
         self.quoteCacheRepo = QuoteCacheRepository(dbPool: database.dbPool)
 
+        // 用 settings 里的代理配置初始化 NetworkConfig.sharedSession,
+        // 之后所有 HTTPClient(走默认 session)会用上代理
+        NetworkConfig.apply(
+            mode: settingsRepo.proxyMode,
+            host: settingsRepo.proxyHost,
+            port: settingsRepo.proxyPort
+        )
+
         let tencent = TencentProvider()
         let eastMoney = EastMoneyProvider()
         let yahoo = YahooProvider()

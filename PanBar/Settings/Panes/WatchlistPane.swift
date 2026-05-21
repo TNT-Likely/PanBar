@@ -5,6 +5,7 @@ struct WatchlistPane: View {
     @State private var items: [WatchItem] = []
     @State private var showAdd: Bool = false
     @State private var editing: WatchItem?
+    @State private var selection: Set<WatchItem.ID> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -23,7 +24,7 @@ struct WatchlistPane: View {
                     Label(L("action.add", comment: ""), systemImage: "plus")
                 }
             }
-            Table(items) {
+            Table(items, selection: $selection) {
                 TableColumn(L("col.symbol", comment: "")) { (w: WatchItem) in
                     Text(w.symbol.market == .us ? w.symbol.code.uppercased() : w.symbol.code)
                         .contentShape(Rectangle())
