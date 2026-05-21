@@ -6,6 +6,9 @@ final class PopoverController {
     private let popover: NSPopover
     private let refresher: QuoteRefresher
     private let viewModel: PopoverViewModel
+    /// 监听 popover 之外的点击,关 popover。`.transient` 行为对菜单栏 popover 有时漏
+    /// (尤其是点系统菜单栏 / 通知 / 其它 app 时),这里多加一层保险。
+    private var eventMonitor: Any?
 
     var isShown: Bool { popover.isShown }
 
@@ -39,16 +42,58 @@ final class PopoverController {
                 .frame(width: 360, height: 520)
         )
         self.popover = popover
+
+        // popover 通过 .transient 行为自己关时,也要更新 refresher 状态
+        // (否则 pace 会一直停在 .popoverOpen,后台多耗一点请求)
+        NotificationCenter.default.addObserver(
+            forName: NSPopover.didCloseNotification,
+            object: popover,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handlePopoverClosed()
+        }
+    }
+
+    deinit {
+        if let m = eventMonitor { NSEvent.removeMonitor(m) }
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    private func handlePopoverClosed() {
+        stopOutsideClickMonitor()
+        refresher.setPopoverOpen(false)
     }
 
     func show(relativeTo view: NSView) {
         refresher.setPopoverOpen(true)
         refresher.refreshNow()
         popover.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
+        startOutsideClickMonitor()
     }
 
     func close() {
+        stopOutsideClickMonitor()
         popover.performClose(nil)
         refresher.setPopoverOpen(false)
+    }
+
+    /// 全局监听点击事件,任何 popover 之外的点都关掉它。
+    /// 不用 local monitor 是因为 local 只捕获本 app 内,系统菜单栏 / 通知中心捕不到。
+    private func startOutsideClickMonitor() {
+        stopOutsideClickMonitor()
+        eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            // 全局监听拿到事件 = 用户点了别处(popover 是 app 内的,本 app 内点击不会进 global monitor)
+            DispatchQueue.main.async {
+                guard let self = self, self.popover.isShown else { return }
+                self.close()
+            }
+        }
+    }
+
+    private func stopOutsideClickMonitor() {
+        if let monitor = eventMonitor {
+            NSEvent.removeMonitor(monitor)
+            eventMonitor = nil
+        }
     }
 }
