@@ -98,6 +98,15 @@ private struct GeneralPaneContent: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
+
+            Section(header: Text(L("settings.hotkeysSection", comment: "")).font(.headline)) {
+                ForEach(GlobalHotkey.HotkeyID.allCases, id: \.self) { hotkeyID in
+                    HotkeyRow(container: container, hotkeyID: hotkeyID)
+                }
+                Text(L("settings.hotkeys.hint", comment: ""))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
         .formStyle(.grouped)
         .padding(20)
@@ -105,6 +114,44 @@ private struct GeneralPaneContent: View {
             baseCurrency = container.settingsRepo.baseCurrency
             browserTemplate = container.settingsRepo.string(BrowserURLBuilder.templateKey) ?? BrowserURLBuilder.Template.xueqiu.rawValue
             hideOnScreenShare = container.settingsRepo.string(SettingsRepository.Keys.hideOnScreenShare) != "0"
+        }
+    }
+}
+
+/// 单行快捷键编辑器:左侧标签 + 中间录入器 + 右侧"重置默认"按钮。
+private struct HotkeyRow: View {
+    let container: DependencyContainer
+    let hotkeyID: GlobalHotkey.HotkeyID
+    @State private var binding: HotkeyBinding?
+
+    var body: some View {
+        HStack {
+            Text(hotkeyID.displayName)
+            Spacer()
+            HotkeyRecorderField(binding: $binding) { newValue in
+                try? HotkeyStore.save(id: hotkeyID, newValue, to: container.settingsRepo)
+                applyToApp()
+            }
+            Button(action: resetToDefault) {
+                Image(systemName: "arrow.uturn.backward.circle")
+            }
+            .buttonStyle(.borderless)
+            .help(L("hotkey.resetDefault", comment: ""))
+        }
+        .onAppear {
+            binding = HotkeyStore.load(id: hotkeyID, from: container.settingsRepo) ?? hotkeyID.defaultBinding
+        }
+    }
+
+    private func resetToDefault() {
+        binding = hotkeyID.defaultBinding
+        try? HotkeyStore.save(id: hotkeyID, binding, to: container.settingsRepo)
+        applyToApp()
+    }
+
+    private func applyToApp() {
+        if let delegate = NSApp.delegate as? AppDelegate {
+            delegate.applyHotkeys(container: container)
         }
     }
 }

@@ -19,7 +19,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func registerGlobalHotkeyIfEnabled(container: DependencyContainer) {
         let enabled = (container.settingsRepo.string(SettingsRepository.Keys.globalHotkeyEnabled) ?? "1") == "1"
         guard enabled else { return }
-        GlobalHotkey.shared.register(actions: [
+        applyHotkeys(container: container)
+    }
+
+    /// 读取 settings 中的自定义 binding,注册到 GlobalHotkey。设置页改动后调用。
+    func applyHotkeys(container: DependencyContainer) {
+        var bindings: [GlobalHotkey.HotkeyID: HotkeyBinding?] = [:]
+        for id in GlobalHotkey.HotkeyID.allCases {
+            bindings[id] = HotkeyStore.load(id: id, from: container.settingsRepo) ?? id.defaultBinding
+        }
+        GlobalHotkey.shared.register(bindings: bindings, actions: [
             .togglePopover: { [weak self] in self?.statusController?.toggleViaHotkey() },
             .togglePrivacy: { [weak self] in self?.statusController?.togglePrivacyViaHotkey() }
         ])

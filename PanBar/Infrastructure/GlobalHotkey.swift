@@ -17,9 +17,25 @@ final class GlobalHotkey {
 
     private init() {}
 
-    enum HotkeyID: UInt32 {
+    enum HotkeyID: UInt32, CaseIterable, Codable {
         case togglePopover = 1
         case togglePrivacy = 2
+
+        var displayName: String {
+            switch self {
+            case .togglePopover: return L("hotkey.togglePopover", comment: "")
+            case .togglePrivacy: return L("hotkey.togglePrivacy", comment: "")
+            }
+        }
+
+        var settingsKey: String { "hotkey_\(rawValue)" }
+
+        var defaultBinding: HotkeyBinding {
+            switch self {
+            case .togglePopover: return .defaultTogglePopover
+            case .togglePrivacy: return .defaultTogglePrivacy
+            }
+        }
     }
 
     private struct Registration {
@@ -27,22 +43,25 @@ final class GlobalHotkey {
         let action: () -> Void
     }
 
-    /// 一次性注册全部快捷键。`actions` 提供每个 ID 对应的回调。
-    func register(actions: [HotkeyID: () -> Void]) {
+    /// 一次性注册全部快捷键。
+    /// `bindings` 是用户自定义的组合(可空 = 不注册该项)。
+    func register(bindings: [HotkeyID: HotkeyBinding?], actions: [HotkeyID: () -> Void]) {
         unregister()
-
         installHandlerIfNeeded()
 
-        let combos: [(HotkeyID, UInt32, UInt32)] = [
-            (.togglePopover, UInt32(kVK_ANSI_P), UInt32(cmdKey | shiftKey)),
-            (.togglePrivacy, UInt32(kVK_ANSI_P), UInt32(cmdKey | shiftKey | optionKey))
-        ]
-
-        for (id, keyCode, modifiers) in combos {
+        for id in HotkeyID.allCases {
+            guard let binding = bindings[id] ?? nil, binding.isValid else { continue }
             guard let action = actions[id] else { continue }
             let hotKeyID = EventHotKeyID(signature: signature, id: id.rawValue)
             var ref: EventHotKeyRef?
-            let status = RegisterEventHotKey(keyCode, modifiers, hotKeyID, GetApplicationEventTarget(), 0, &ref)
+            let status = RegisterEventHotKey(
+                UInt32(binding.keyCode),
+                binding.carbonModifiers,
+                hotKeyID,
+                GetApplicationEventTarget(),
+                0,
+                &ref
+            )
             if status == noErr, let ref = ref {
                 registrations[id] = Registration(ref: ref, action: action)
             }

@@ -638,6 +638,48 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "隐藏滚动(隐私)" } }
       }
     },
+    "settings.hotkeysSection" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hotkeys" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "全局快捷键" } }
+      }
+    },
+    "settings.hotkeys.hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Click a field, then press the new shortcut. Press ⌫ to clear, ⎋ to cancel." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点击下面任一框,按下新组合即可录入。⌫ 清除,⎋ 取消。" } }
+      }
+    },
+    "hotkey.togglePopover" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show / hide popover" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "唤起 / 收起面板" } }
+      }
+    },
+    "hotkey.togglePrivacy" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Toggle privacy hide" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "切换隐私隐藏" } }
+      }
+    },
+    "hotkey.recording" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Press shortcut…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "按下新组合…" } }
+      }
+    },
+    "hotkey.unbound" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Click to set" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点击设置" } }
+      }
+    },
+    "hotkey.resetDefault" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reset to default" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重置为默认" } }
+      }
+    },
     "menu.privacy.show" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Show ticker" } },

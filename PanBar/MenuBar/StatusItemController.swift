@@ -1,4 +1,5 @@
 import AppKit
+import Carbon
 import Combine
 
 /// 持有 NSStatusItem 与自绘的 TickerView。
@@ -81,14 +82,24 @@ final class StatusItemController {
         contextMenu.addItem(withTitle: L("menu.refresh", comment: ""), action: #selector(refresh), keyEquivalent: "r").target = self
         contextMenu.addItem(withTitle: L("menu.showPopover", comment: ""), action: #selector(showPopover), keyEquivalent: "p").target = self
         contextMenu.addItem(.separator())
-        // 隐私快捷开关:立即遮蔽 ticker(⌘⇧⌥P 也能触发)
+        // 隐私快捷开关:跟用户自定义的全局快捷键保持一致
         let privacyItem = NSMenuItem(
             title: privacyHidden ? L("menu.privacy.show", comment: "") : L("menu.privacy.hideNow", comment: ""),
             action: #selector(togglePrivacy),
-            keyEquivalent: "p"
+            keyEquivalent: ""
         )
         privacyItem.target = self
-        privacyItem.keyEquivalentModifierMask = [.command, .shift, .option]
+        if let custom = HotkeyStore.load(id: .togglePrivacy, from: settingsRepo) ?? Optional(GlobalHotkey.HotkeyID.togglePrivacy.defaultBinding),
+           custom.isValid {
+            // 把 Carbon keyCode + Carbon modifiers 翻译到 NSMenuItem 的格式
+            privacyItem.keyEquivalent = HotkeyBinding.character(for: custom.keyCode).lowercased()
+            var mask: NSEvent.ModifierFlags = []
+            if custom.carbonModifiers & UInt32(cmdKey) != 0 { mask.insert(.command) }
+            if custom.carbonModifiers & UInt32(shiftKey) != 0 { mask.insert(.shift) }
+            if custom.carbonModifiers & UInt32(optionKey) != 0 { mask.insert(.option) }
+            if custom.carbonModifiers & UInt32(controlKey) != 0 { mask.insert(.control) }
+            privacyItem.keyEquivalentModifierMask = mask
+        }
         contextMenu.addItem(privacyItem)
         contextMenu.addItem(.separator())
         contextMenu.addItem(withTitle: L("menu.settings", comment: ""), action: #selector(openSettings), keyEquivalent: ",").target = self
