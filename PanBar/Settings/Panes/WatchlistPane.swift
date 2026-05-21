@@ -5,6 +5,7 @@ struct WatchlistPane: View {
     @State private var items: [WatchItem] = []
     @State private var showAdd: Bool = false
     @State private var editing: WatchItem?
+    @State private var deleting: WatchItem?
     @State private var selection: Set<WatchItem.ID> = []
 
     var body: some View {
@@ -54,30 +55,47 @@ struct WatchlistPane: View {
                 container?.refresher.refreshNow()
             }, onCancel: { editing = nil })
         }
+        .alert(
+            String(format: L("delete.confirm.title", comment: ""), deleting?.name ?? ""),
+            isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })
+        ) {
+            Button(L("action.cancel", comment: ""), role: .cancel) { deleting = nil }
+            Button(L("action.delete", comment: ""), role: .destructive) {
+                if let w = deleting {
+                    try? container?.watchlistRepo.delete(id: w.id)
+                    reload()
+                    container?.refresher.refreshNow()
+                }
+                deleting = nil
+            }
+        } message: {
+            Text(L("delete.confirm.body", comment: ""))
+        }
     }
 
     private func reload() {
         items = (try? container?.watchlistRepo.all()) ?? []
     }
 
-    /// 同 PortfolioPane:用 List 替代 Table 拿 .onMove 拖拽改顺序;伪表头对齐列宽。
+    /// 同 PortfolioPane:用 List 替代 Table 拿 .onMove 拖拽改顺序;伪表头对齐列宽,
+    /// 行首加三道杠作拖拽手柄。「在滚动条显示」开关已在 设置 → 滚动 里有,这里去掉。
     private var watchlistList: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
+                Text("").frame(width: 18)
                 Text(L("col.symbol", comment: "")).frame(width: 80, alignment: .leading)
-                Text(L("col.name", comment: "")).frame(maxWidth: .infinity, alignment: .leading)
-                Text(L("col.market", comment: "")).frame(width: 60, alignment: .leading)
-                Text(L("col.inTicker", comment: "")).frame(width: 50, alignment: .center)
-                Spacer().frame(width: 60)
+                Text(L("col.name", comment: "")).frame(minWidth: 100, maxWidth: .infinity, alignment: .leading)
+                Text(L("col.market", comment: "")).frame(width: 56, alignment: .leading)
+                Spacer().frame(width: 56)
             }
             .font(.system(size: 11, weight: .semibold))
             .foregroundColor(.secondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
 
-            List {
+            List(selection: $selection) {
                 ForEach(items) { w in
-                    watchRow(w)
+                    watchRow(w).tag(w.id)
                 }
                 .onMove(perform: move)
             }
@@ -88,27 +106,20 @@ struct WatchlistPane: View {
     @ViewBuilder
     private func watchRow(_ w: WatchItem) -> some View {
         HStack(spacing: 8) {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary.opacity(0.55))
+                .frame(width: 18)
+                .help(L("action.dragToReorder", comment: ""))
             Text(w.symbol.market == .us ? w.symbol.code.uppercased() : w.symbol.code)
                 .frame(width: 80, alignment: .leading)
             Text(w.name)
                 .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .truncationMode(.tail)
+                .frame(minWidth: 100, maxWidth: .infinity, alignment: .leading)
             Text(w.symbol.market.displayName)
-                .frame(width: 60, alignment: .leading)
+                .frame(width: 56, alignment: .leading)
                 .foregroundColor(.secondary)
-            Toggle("", isOn: Binding(
-                get: { w.inTicker },
-                set: { newValue in
-                    var copy = w
-                    copy.inTicker = newValue
-                    try? container?.watchlistRepo.upsert(copy)
-                    reload()
-                    container?.refresher.refreshNow()
-                }
-            ))
-            .labelsHidden()
-            .help(L("col.inTicker.help", comment: ""))
-            .frame(width: 50, alignment: .center)
             HStack(spacing: 4) {
                 Button { editing = w } label: {
                     Image(systemName: "pencil")
@@ -116,15 +127,13 @@ struct WatchlistPane: View {
                 .buttonStyle(.borderless)
                 .help(L("action.edit", comment: ""))
                 Button(role: .destructive) {
-                    try? container?.watchlistRepo.delete(id: w.id)
-                    reload()
-                    container?.refresher.refreshNow()
+                    deleting = w
                 } label: {
                     Image(systemName: "trash")
                 }
                 .buttonStyle(.borderless)
             }
-            .frame(width: 60)
+            .frame(width: 56)
         }
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { editing = w }

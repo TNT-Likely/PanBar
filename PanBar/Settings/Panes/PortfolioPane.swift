@@ -5,6 +5,7 @@ struct PortfolioPane: View {
     @State private var holdings: [Holding] = []
     @State private var showAdd: Bool = false
     @State private var editing: Holding?
+    @State private var deleting: Holding?     // 二次确认前临时保存待删
     @State private var selection: Set<Holding.ID> = []
 
     var body: some View {
@@ -64,6 +65,22 @@ struct PortfolioPane: View {
                 container?.refresher.refreshNow()
             }, onCancel: { editing = nil })
         }
+        .alert(
+            String(format: L("delete.confirm.title", comment: ""), deleting?.name ?? ""),
+            isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })
+        ) {
+            Button(L("action.cancel", comment: ""), role: .cancel) { deleting = nil }
+            Button(L("action.delete", comment: ""), role: .destructive) {
+                if let h = deleting {
+                    try? container?.holdingsRepo.delete(id: h.id)
+                    reload()
+                    container?.refresher.refreshNow()
+                }
+                deleting = nil
+            }
+        } message: {
+            Text(L("delete.confirm.body", comment: ""))
+        }
     }
 
     private func reload() {
@@ -71,28 +88,27 @@ struct PortfolioPane: View {
     }
 
     /// 用 List 替代 Table 是为了支持 .onMove 拖拽改顺序;Table 在 SwiftUI 里目前
-    /// 没有 onMove API。手撸列宽对齐成「类表格」外观,头部一行写死作伪表头。
+    /// 没有 onMove API。手撸列宽对齐成「类表格」外观:左侧三道杠作拖拽手柄。
+    /// 「在滚动条显示」的开关已经在 设置 → 滚动 那 pane 里有了,这里删掉省空间。
     private var holdingsList: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // 伪表头
             HStack(spacing: 8) {
-                Text("").frame(width: 14)  // 留给 drag handle / spacing
-                Text(L("col.symbol", comment: "")).frame(width: 80, alignment: .leading)
-                Text(L("col.name", comment: "")).frame(maxWidth: .infinity, alignment: .leading)
-                Text(L("col.market", comment: "")).frame(width: 60, alignment: .leading)
+                Text("").frame(width: 18)  // 拖拽手柄列
+                Text(L("col.symbol", comment: "")).frame(width: 70, alignment: .leading)
+                Text(L("col.name", comment: "")).frame(minWidth: 100, maxWidth: .infinity, alignment: .leading)
+                Text(L("col.market", comment: "")).frame(width: 56, alignment: .leading)
                 Text(L("col.qty", comment: "")).frame(width: 70, alignment: .trailing)
-                Text(L("col.cost", comment: "")).frame(width: 90, alignment: .trailing)
-                Text(L("col.inTicker", comment: "")).frame(width: 50, alignment: .center)
-                Spacer().frame(width: 60)  // 编辑/删除按钮列
+                Text(L("col.cost", comment: "")).frame(width: 100, alignment: .trailing)
+                Spacer().frame(width: 56)
             }
             .font(.system(size: 11, weight: .semibold))
             .foregroundColor(.secondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
 
-            List {
+            List(selection: $selection) {
                 ForEach(holdings) { h in
-                    holdingRow(h)
+                    holdingRow(h).tag(h.id)
                 }
                 .onMove(perform: move)
             }
@@ -103,34 +119,27 @@ struct PortfolioPane: View {
     @ViewBuilder
     private func holdingRow(_ h: Holding) -> some View {
         HStack(spacing: 8) {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary.opacity(0.55))
+                .frame(width: 18)
+                .help(L("action.dragToReorder", comment: ""))
             Text(h.symbol.market == .us ? h.symbol.code.uppercased() : h.symbol.code)
                 .monospacedDigit()
-                .frame(width: 80, alignment: .leading)
+                .frame(width: 70, alignment: .leading)
             Text(h.name)
                 .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .truncationMode(.tail)
+                .frame(minWidth: 100, maxWidth: .infinity, alignment: .leading)
             Text(h.symbol.market.displayName)
-                .frame(width: 60, alignment: .leading)
+                .frame(width: 56, alignment: .leading)
                 .foregroundColor(.secondary)
             Text("\(h.quantity)")
                 .monospacedDigit()
                 .frame(width: 70, alignment: .trailing)
             Text(h.currency.format(h.costPrice))
                 .monospacedDigit()
-                .frame(width: 90, alignment: .trailing)
-            Toggle("", isOn: Binding(
-                get: { h.inTicker },
-                set: { newValue in
-                    var copy = h
-                    copy.inTicker = newValue
-                    try? container?.holdingsRepo.upsert(copy)
-                    reload()
-                    container?.refresher.refreshNow()
-                }
-            ))
-            .labelsHidden()
-            .help(L("col.inTicker.help", comment: ""))
-            .frame(width: 50, alignment: .center)
+                .frame(width: 100, alignment: .trailing)
             HStack(spacing: 4) {
                 Button { editing = h } label: {
                     Image(systemName: "pencil")
@@ -138,15 +147,13 @@ struct PortfolioPane: View {
                 .buttonStyle(.borderless)
                 .help(L("action.edit", comment: ""))
                 Button(role: .destructive) {
-                    try? container?.holdingsRepo.delete(id: h.id)
-                    reload()
-                    container?.refresher.refreshNow()
+                    deleting = h
                 } label: {
                     Image(systemName: "trash")
                 }
                 .buttonStyle(.borderless)
             }
-            .frame(width: 60)
+            .frame(width: 56)
         }
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { editing = h }

@@ -1724,6 +1724,24 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "自定义 HTTP 代理" } }
       }
     },
+    "action.dragToReorder" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Drag to reorder" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "拖动改顺序" } }
+      }
+    },
+    "delete.confirm.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete %@?" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "确定删除「%@」?" } }
+      }
+    },
+    "delete.confirm.body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This action cannot be undone." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "此操作无法撤销。" } }
+      }
+    },
     "about.reportIssue" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Report an Issue" } },
