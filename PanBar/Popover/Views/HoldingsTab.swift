@@ -150,6 +150,12 @@ private struct HoldingRow: View {
         return (q.price - holding.costPrice) * holding.quantity
     }
 
+    /// 右侧是否要显示「≈ 本位币」第三行。决定左侧布局是否要 Spacer 撑底。
+    private var hasBaseConversion: Bool {
+        guard holding.currency != baseCurrency else { return false }
+        return position?.basePnL != nil
+    }
+
     var body: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 3) {
@@ -161,11 +167,17 @@ private struct HoldingRow: View {
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
+                // 右侧 3 行时,在两条左侧文字之间塞 Spacer 把第二行推到底,
+                // 跟右侧的第三行(≈ base)平齐。右侧 2 行时不撑,正常紧贴排。
+                if hasBaseConversion {
+                    Spacer(minLength: 0)
+                }
                 Text(detailText)
                     .font(.system(size: 10))
                     .foregroundColor(.secondary.opacity(0.85))
                     .monospacedDigit()
             }
+            .frame(maxHeight: hasBaseConversion ? .infinity : nil, alignment: .top)
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {
                 HStack(spacing: 4) {
