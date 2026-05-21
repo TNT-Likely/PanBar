@@ -1,6 +1,13 @@
 import Foundation
 
-/// 多币种换算服务。内存缓存 + 5 分钟 TTL。失败降级到最后一次成功值,再失败返回 nil(由上层显示 "--")。
+/// 多币种换算服务。
+///
+/// 内部只存两个基础汇率:`USD→CNY` 和 `HKD→CNY`。
+/// 其它 6 个方向都用 CNY 作枢轴计算:
+///   - CNY→USD = 1 / USDCNY
+///   - CNY→HKD = 1 / HKDCNY
+///   - USD→HKD = USDCNY / HKDCNY
+///   - HKD→USD = HKDCNY / USDCNY
 actor FXService {
     private let provider: FXProvider
     private var cache: [String: FXRate] = [:]
@@ -11,61 +18,51 @@ actor FXService {
         self.provider = provider
     }
 
-    /// 把 `value` 从 `from` 换算到 `to`。返回 nil 表示当前无法换算(汇率取不到)。
+    /// 把 `value` 从 `from` 换算到 `to`。返回 nil 表示当前无法换算。
     func convert(_ value: Decimal, from: Currency, to: Currency) async -> Decimal? {
         if from == to { return value }
-
-        if let direct = await rate(from: from, to: to) {
-            return value * direct.rate
-        }
-        if let inverse = await rate(from: to, to: from), inverse.rate > 0 {
-            return value / inverse.rate
-        }
-        // 用 USD 作为枢轴
-        if from != .usd, to != .usd,
-           let r1 = await rate(from: from, to: .usd),
-           let r2 = await rate(from: .usd, to: to) {
-            return value * r1.rate * r2.rate
-        }
-        return nil
+        guard let rate = await rate(from: from, to: to) else { return nil }
+        return value * rate
     }
 
-    func rate(from: Currency, to: Currency) async -> FXRate? {
-        if from == to {
-            return FXRate(from: from, to: to, rate: 1, asOf: Date())
-        }
-        let key = "\(from.rawValue)\(to.rawValue)"
-        if let cached = cache[key], Date().timeIntervalSince(cached.asOf) < ttl {
-            return cached
-        }
-        do {
-            let pairs = neededPairs(from: from, to: to)
-            let fetched = try await provider.fetch(pairs: pairs)
-            for r in fetched {
-                let k = "\(r.from.rawValue)\(r.to.rawValue)"
-                cache[k] = r
-            }
-            lastFetch = Date()
-            return cache[key] ?? cache[key]
-        } catch {
-            Log.quote.warning("FX fetch failed: \(String(describing: error), privacy: .public)")
-            return cache[key]
+    /// 实际汇率(浮点数)。CNY 作为唯一枢轴。
+    func rate(from: Currency, to: Currency) async -> Decimal? {
+        if from == to { return 1 }
+        // 确保两个基础对已加载
+        await refreshIfNeeded()
+
+        let usdcny = cache["USDCNY"]?.rate
+        let hkdcny = cache["HKDCNY"]?.rate
+
+        switch (from, to) {
+        case (.usd, .cny): return usdcny
+        case (.hkd, .cny): return hkdcny
+        case (.cny, .usd): return usdcny.flatMap { $0 > 0 ? 1 / $0 : nil }
+        case (.cny, .hkd): return hkdcny.flatMap { $0 > 0 ? 1 / $0 : nil }
+        case (.usd, .hkd):
+            guard let u = usdcny, let h = hkdcny, h > 0 else { return nil }
+            return u / h
+        case (.hkd, .usd):
+            guard let u = usdcny, let h = hkdcny, u > 0 else { return nil }
+            return h / u
+        default: return nil
         }
     }
 
-    /// 预热常用货币对(应用启动时调用一次)。
+    /// 预热(应用启动时调一次)。
     func warmup() async {
-        _ = try? await provider.fetch(pairs: [
-            (.usd, .cny),
-            (.usd, .hkd),
-            (.hkd, .cny)
-        ])
+        await refreshIfNeeded(force: true)
     }
 
-    private func neededPairs(from: Currency, to: Currency) -> [(Currency, Currency)] {
-        if from == .usd || to == .usd {
-            return [(from, to)]
+    private func refreshIfNeeded(force: Bool = false) async {
+        let stale = Date().timeIntervalSince(lastFetch) >= ttl
+        if !force && !stale && !cache.isEmpty { return }
+        let rates = (try? await provider.fetch(pairs: [(.usd, .cny), (.hkd, .cny)])) ?? []
+        for r in rates {
+            // 用语义化 key 存(不依赖 enum rawValue 拼接)
+            if r.from == .usd, r.to == .cny { cache["USDCNY"] = r }
+            if r.from == .hkd, r.to == .cny { cache["HKDCNY"] = r }
         }
-        return [(from, .usd), (.usd, to)]
+        if !rates.isEmpty { lastFetch = Date() }
     }
 }
