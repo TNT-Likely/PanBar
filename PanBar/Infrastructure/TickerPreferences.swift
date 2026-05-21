@@ -41,6 +41,14 @@ final class TickerPreferences: ObservableObject {
             }
         }
     }
+    /// 菜单栏展现形式。
+    @Published var displayMode: TickerDisplayMode {
+        didSet { try? repo.set(SettingsRepository.Keys.tickerDisplayMode, displayMode.rawValue) }
+    }
+    /// 极简模式下显示哪个汇总指标(today / total / allTime)。
+    @Published var minimalMetric: MinimalMetric {
+        didSet { try? repo.set(SettingsRepository.Keys.tickerMinimalMetric, minimalMetric.rawValue) }
+    }
 
     private let repo: SettingsRepository
 
@@ -61,6 +69,42 @@ final class TickerPreferences: ObservableObject {
             self.tickerIndexIDs = Set(arr)
         } else {
             self.tickerIndexIDs = []
+        }
+        self.displayMode = TickerDisplayMode(rawValue: repo.string(SettingsRepository.Keys.tickerDisplayMode) ?? "") ?? .scroll
+        self.minimalMetric = MinimalMetric(rawValue: repo.string(SettingsRepository.Keys.tickerMinimalMetric) ?? "") ?? .todayPnL
+    }
+}
+
+/// 菜单栏 ticker 的展现形式。
+enum TickerDisplayMode: String, CaseIterable, Identifiable, Codable {
+    case scroll    // 经典左右滚动(默认)
+    case carousel  // 一条一条上下淡入轮播
+    case compact   // 三个简写卡片(今日 / 总盈亏 / 总市值)
+    case minimal   // 只显示一个用户选定的数字
+
+    var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .scroll:   return L("displayMode.scroll", comment: "")
+        case .carousel: return L("displayMode.carousel", comment: "")
+        case .compact:  return L("displayMode.compact", comment: "")
+        case .minimal:  return L("displayMode.minimal", comment: "")
+        }
+    }
+}
+
+/// 极简模式下显示哪个汇总指标。
+enum MinimalMetric: String, CaseIterable, Identifiable, Codable {
+    case todayPnL
+    case allTimePnL
+    case totalAssets
+
+    var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .todayPnL:    return L("summary.today", comment: "")
+        case .allTimePnL:  return L("summary.allTime", comment: "")
+        case .totalAssets: return L("summary.totalAssets", comment: "")
         }
     }
 }

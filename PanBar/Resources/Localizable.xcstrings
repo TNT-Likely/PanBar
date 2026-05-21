@@ -164,6 +164,84 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "捐赠支持开发" } }
       }
     },
+    "ticker.displayMode" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Display mode" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "展现形式" } }
+      }
+    },
+    "displayMode.scroll" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Scroll (horizontal)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "滚动(横向)" } }
+      }
+    },
+    "displayMode.carousel" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Carousel (one at a time)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "轮播(一条一条)" } }
+      }
+    },
+    "displayMode.compact" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fixed (compact)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "固定(简写)" } }
+      }
+    },
+    "displayMode.minimal" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Minimal (single metric)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "极简(单数字)" } }
+      }
+    },
+    "displayMode.scroll.hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All items scroll horizontally like a stock ticker." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "经典左右滚动,跟港交所大屏一个风格。" } }
+      }
+    },
+    "displayMode.carousel.hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shows one item at a time, fades to the next every few seconds. Easier on the eyes than continuous scroll." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每条停留几秒后滑入下一条,比连续滚动眼花少。" } }
+      }
+    },
+    "displayMode.compact.hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Three abbreviated numbers (today / total P&L / assets) with K/M suffix. No animation." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "三个简写数字(今日 / 累计 / 总市值),K/M 后缀,不动。" } }
+      }
+    },
+    "displayMode.minimal.hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "A single number of your choice + arrow indicator. Smallest footprint." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "只显示一个你选的数字 + ↑↓ 箭头,菜单栏最不占地方。" } }
+      }
+    },
+    "ticker.minimalMetric" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show metric" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示指标" } }
+      }
+    },
+    "compact.label.today" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "TODAY" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今" } }
+      }
+    },
+    "compact.label.allTime" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "P&L" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "累" } }
+      }
+    },
+    "compact.label.total" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "ASSETS" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "总" } }
+      }
+    },
     "settings.markets" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Markets" } },

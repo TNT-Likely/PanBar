@@ -22,15 +22,38 @@ private struct TickerPaneContent: View {
     var body: some View {
         Form {
             Section(header: Text(L("settings.ticker", comment: "")).font(.title3)) {
-                Picker(L("settings.scrollSpeed", comment: ""), selection: $prefs.scrollSpeed) {
-                    ForEach(ScrollSpeed.allCases) { s in
-                        Text(s.displayName).tag(s)
+                Picker(L("ticker.displayMode", comment: ""), selection: $prefs.displayMode) {
+                    ForEach(TickerDisplayMode.allCases) { m in
+                        Text(m.displayName).tag(m)
                     }
                 }
-                Toggle(L("settings.pauseOnHover", comment: ""), isOn: $prefs.pauseOnHover)
+                Text(displayModeHint)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                if prefs.displayMode == .scroll {
+                    Picker(L("settings.scrollSpeed", comment: ""), selection: $prefs.scrollSpeed) {
+                        ForEach(ScrollSpeed.allCases) { s in
+                            Text(s.displayName).tag(s)
+                        }
+                    }
+                    Toggle(L("settings.pauseOnHover", comment: ""), isOn: $prefs.pauseOnHover)
+                }
+                if prefs.displayMode == .carousel {
+                    Toggle(L("settings.pauseOnHover", comment: ""), isOn: $prefs.pauseOnHover)
+                }
+                if prefs.displayMode == .minimal {
+                    Picker(L("ticker.minimalMetric", comment: ""), selection: $prefs.minimalMetric) {
+                        ForEach(MinimalMetric.allCases) { m in
+                            Text(m.displayName).tag(m)
+                        }
+                    }
+                }
                 Toggle(L("settings.pauseWhenClosed", comment: ""), isOn: $prefs.pauseWhenClosed)
-                Stepper(value: $prefs.maxItems, in: 1...50) {
-                    Text(String(format: L("settings.maxItems", comment: ""), prefs.maxItems))
+                if prefs.displayMode == .scroll || prefs.displayMode == .carousel {
+                    Stepper(value: $prefs.maxItems, in: 1...50) {
+                        Text(String(format: L("settings.maxItems", comment: ""), prefs.maxItems))
+                    }
                 }
             }
 
@@ -106,6 +129,15 @@ private struct TickerPaneContent: View {
         .formStyle(.grouped)
         .padding(20)
         .onAppear(perform: reload)
+    }
+
+    private var displayModeHint: String {
+        switch prefs.displayMode {
+        case .scroll:   return L("displayMode.scroll.hint", comment: "")
+        case .carousel: return L("displayMode.carousel.hint", comment: "")
+        case .compact:  return L("displayMode.compact.hint", comment: "")
+        case .minimal:  return L("displayMode.minimal.hint", comment: "")
+        }
     }
 
     private func marketBadge(_ m: Market) -> some View {

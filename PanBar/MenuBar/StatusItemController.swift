@@ -6,7 +6,8 @@ import Combine
 @MainActor
 final class StatusItemController {
     private let statusItem: NSStatusItem
-    private let tickerView: TickerView
+    /// 真实的 ticker 视图,类型随 displayMode 变化(滚动/轮播/固定/极简)。
+    private var tickerView: MenuBarTickerView
     private let popoverController: PopoverController
     private let refresher: QuoteRefresher
     private let prefs: TickerPreferences
@@ -17,6 +18,7 @@ final class StatusItemController {
     private var contextMenu: NSMenu
     private var screenSharingMonitor: ScreenSharingMonitor?
     private var privacyHidden: Bool = false
+    private var currentMode: TickerDisplayMode = .scroll
 
     init(
         refresher: QuoteRefresher,
@@ -32,7 +34,8 @@ final class StatusItemController {
         self.settingsRepo = settingsRepo
         self.renderer = TickerRenderer(scheme: prefs.colorScheme)
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        self.tickerView = TickerView(frame: NSRect(x: 0, y: 0, width: 320, height: 22))
+        self.currentMode = prefs.displayMode
+        self.tickerView = Self.makeView(for: prefs.displayMode, scheme: prefs.colorScheme)
         self.contextMenu = NSMenu()
 
         // 屏幕共享检测
@@ -54,12 +57,59 @@ final class StatusItemController {
 
     private func applyPrefs() {
         renderer = TickerRenderer(scheme: prefs.colorScheme)
-        tickerView.pixelsPerSecond = prefs.scrollSpeed.pixelsPerSecond
-        tickerView.pauseOnHover = prefs.pauseOnHover
+        // mode 变化:整个 view 都要换
+        if prefs.displayMode != currentMode {
+            swapTickerView(to: prefs.displayMode)
+        }
+        // 各模式独立配置
+        if let scroll = tickerView as? TickerView {
+            scroll.pixelsPerSecond = prefs.scrollSpeed.pixelsPerSecond
+            scroll.pauseOnHover = prefs.pauseOnHover
+        }
+        if let carousel = tickerView as? CarouselTickerView {
+            carousel.pauseOnHover = prefs.pauseOnHover
+        }
+        if let compact = tickerView as? CompactTickerView {
+            compact.scheme = prefs.colorScheme
+        }
+        if let minimal = tickerView as? MinimalTickerView {
+            minimal.scheme = prefs.colorScheme
+        }
         let shouldPause = prefs.pauseWhenClosed && !clock.anyOpen()
         tickerView.setPaused(shouldPause)
-        // 即时重渲染
         applyQuotes(refresher.quotes)
+    }
+
+    /// 创建对应模式的视图实例。
+    private static func makeView(for mode: TickerDisplayMode, scheme: TickerColorScheme) -> MenuBarTickerView {
+        let frame = NSRect(x: 0, y: 0, width: 200, height: 22)
+        switch mode {
+        case .scroll:
+            return TickerView(frame: frame)
+        case .carousel:
+            return CarouselTickerView(frame: frame)
+        case .compact:
+            let v = CompactTickerView(frame: frame)
+            v.scheme = scheme
+            return v
+        case .minimal:
+            let v = MinimalTickerView(frame: frame)
+            v.scheme = scheme
+            return v
+        }
+    }
+
+    /// 切换 ticker view 时,要把旧的从 button 里摘掉,装上新的。
+    private func swapTickerView(to mode: TickerDisplayMode) {
+        guard let button = statusItem.button else { return }
+        tickerView.removeFromSuperview()
+        tickerView = Self.makeView(for: mode, scheme: prefs.colorScheme)
+        button.frame = NSRect(x: 0, y: 0, width: tickerView.totalWidth, height: 22)
+        tickerView.frame = button.bounds
+        tickerView.autoresizingMask = [.width, .height]
+        button.addSubview(tickerView)
+        statusItem.length = tickerView.totalWidth
+        currentMode = mode
     }
 
     private func configure() {
@@ -75,6 +125,62 @@ final class StatusItemController {
         statusItem.length = tickerView.totalWidth
 
         buildContextMenu()
+    }
+
+    /// 各模式根据当前数据自己组装,写回到 statusItem.length。
+    private func render(quotes: [SymbolID: Quote]) {
+        switch currentMode {
+        case .scroll:
+            guard let view = tickerView as? TickerView else { return }
+            let items = buildTickerItems(quotes: quotes)
+            view.update(attributed: renderer.render(items: items))
+        case .carousel:
+            guard let view = tickerView as? CarouselTickerView else { return }
+            let items = buildTickerItems(quotes: quotes)
+            // 单条单条渲染,carousel 每次轮播切一条
+            let per = items.map { renderer.render(items: [$0]) }
+            view.update(items: per)
+        case .compact:
+            guard let view = tickerView as? CompactTickerView else { return }
+            let snap = refresher.snapshot
+            view.update(slots: CompactTickerView.Slots(
+                todayPnL: snap.todayPnL,
+                allTimePnL: snap.allTimePnL,
+                totalAssets: snap.totalAssets,
+                baseCurrency: snap.baseCurrency
+            ))
+        case .minimal:
+            guard let view = tickerView as? MinimalTickerView else { return }
+            let snap = refresher.snapshot
+            view.update(content: minimalContent(snap: snap, metric: prefs.minimalMetric))
+        }
+        statusItem.length = tickerView.totalWidth
+    }
+
+    private func minimalContent(snap: PortfolioSnapshot, metric: MinimalMetric) -> MinimalTickerView.Content? {
+        switch metric {
+        case .todayPnL:
+            return MinimalTickerView.Content(
+                label: L("compact.label.today", comment: ""),
+                value: snap.todayPnL,
+                direction: snap.todayPnL > 0 ? .up : (snap.todayPnL < 0 ? .down : .neutral),
+                currency: snap.baseCurrency
+            )
+        case .allTimePnL:
+            return MinimalTickerView.Content(
+                label: L("compact.label.allTime", comment: ""),
+                value: snap.allTimePnL,
+                direction: snap.allTimePnL > 0 ? .up : (snap.allTimePnL < 0 ? .down : .neutral),
+                currency: snap.baseCurrency
+            )
+        case .totalAssets:
+            return MinimalTickerView.Content(
+                label: L("compact.label.total", comment: ""),
+                value: snap.totalAssets,
+                direction: .neutral,
+                currency: snap.baseCurrency
+            )
+        }
     }
 
     private func buildContextMenu() {
@@ -135,10 +241,15 @@ final class StatusItemController {
     }
 
     private func applyQuotes(_ quotes: [SymbolID: Quote]) {
-        var items: [TickerItem] = []
+        render(quotes: quotes)
+    }
 
-        // 1) Summary 三件套(用户在 Settings → Ticker 单独勾选)
+    /// 把 quotes / snapshot / 偏好聚合成 [TickerItem],scroll / carousel 共用。
+    /// compact / minimal 直接从 snapshot 拿数字,不走这里。
+    private func buildTickerItems(quotes: [SymbolID: Quote]) -> [TickerItem] {
+        var items: [TickerItem] = []
         let snap = refresher.snapshot
+
         if prefs.showTodayPnL {
             let dir: TickerDirection = snap.todayPnL > 0 ? .up : (snap.todayPnL < 0 ? .down : .neutral)
             let sign = snap.todayPnL >= 0 ? "+" : "-"
@@ -161,7 +272,6 @@ final class StatusItemController {
             items.append(.summary(label: L("summary.allTime", comment: ""), value: value, direction: dir))
         }
 
-        // 2) 大盘指数:用户勾选的(用 IndexCatalog 顺序排列)
         let enabledIDs = prefs.tickerIndexIDs
         if !enabledIDs.isEmpty {
             let byID = Dictionary(uniqueKeysWithValues: refresher.indexQuotes.map { ($0.descriptor.id, $0) })
@@ -172,7 +282,6 @@ final class StatusItemController {
             }
         }
 
-        // 3) 持仓行情:只取勾选 inTicker=true 的
         var seen = Set<SymbolID>()
         for p in snap.positions where p.holding.inTicker {
             if let q = quotes[p.holding.symbol] {
@@ -180,7 +289,6 @@ final class StatusItemController {
                 seen.insert(p.holding.symbol)
             }
         }
-        // 4) 自选行情:只取勾选 inTicker=true 的
         let watchlist = (try? holdingsRepoFetchSiblingWatch()) ?? []
         for w in watchlist where w.inTicker && !seen.contains(w.symbol) {
             if let q = quotes[w.symbol] {
@@ -188,7 +296,6 @@ final class StatusItemController {
             }
         }
 
-        // 5) 应用上限(只对股票 + 指数行情生效,summary 始终展示)
         let stockCap = max(1, prefs.maxItems)
         var summaries: [TickerItem] = []
         var lineItems: [TickerItem] = []
@@ -199,11 +306,7 @@ final class StatusItemController {
             }
         }
         let capped = Array(lineItems.prefix(stockCap))
-        items = summaries + capped
-
-        let attr = renderer.render(items: items)
-        tickerView.update(attributed: attr)
-        statusItem.length = tickerView.totalWidth
+        return summaries + capped
     }
 
     /// 从持仓 repo 同级的 watchlist repo 拿数据。通过弱引用注入避免循环引用。

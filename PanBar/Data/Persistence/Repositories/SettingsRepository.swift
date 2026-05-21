@@ -66,6 +66,8 @@ struct SettingsRepository {
         static let marketOverrideHK = "market_override_hk"
         static let marketOverrideUS = "market_override_us"
         static let pauseRefreshWhenClosed = "pause_refresh_when_closed"
+        static let tickerDisplayMode = "ticker_display_mode"
+        static let tickerMinimalMetric = "ticker_minimal_metric"
 
         /// 拼出市场对应的 override key,避免外部各自拼字符串
         static func marketOverride(_ market: Market) -> String {
