@@ -35,3 +35,6 @@ panbar.sqlite-*
 .env.local
 *.p12
 *.mobileprovision
+
+# 本地草稿:推广文案 / scratch notes,不跟随发布
+.docs/
