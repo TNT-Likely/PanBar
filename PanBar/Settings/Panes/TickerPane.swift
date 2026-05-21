@@ -4,8 +4,8 @@ struct TickerPane: View {
     @Environment(\.container) private var container
 
     var body: some View {
-        if let prefs = container?.tickerPrefs {
-            TickerPaneContent(prefs: prefs)
+        if let container = container {
+            TickerPaneContent(container: container, prefs: container.tickerPrefs)
         } else {
             Text("Loading…")
         }
@@ -13,7 +13,11 @@ struct TickerPane: View {
 }
 
 private struct TickerPaneContent: View {
+    let container: DependencyContainer
     @ObservedObject var prefs: TickerPreferences
+
+    @State private var holdings: [Holding] = []
+    @State private var watchlist: [WatchItem] = []
 
     var body: some View {
         Form {
@@ -56,13 +60,7 @@ private struct TickerPaneContent: View {
                     )) {
                         HStack {
                             Text(desc.displayName)
-                            Text(desc.market.displayName)
-                                .font(.system(size: 10))
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 1)
-                                .background(Color.secondary.opacity(0.12))
-                                .clipShape(RoundedRectangle(cornerRadius: 3))
+                            marketBadge(desc.market)
                         }
                     }
                 }
@@ -71,13 +69,88 @@ private struct TickerPaneContent: View {
                     .foregroundColor(.secondary)
             }
 
-            Section(header: Text(L("ticker.itemsHint.title", comment: "")).font(.headline)) {
-                Text(L("ticker.itemsHint.body", comment: ""))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            Section(header: Text(L("ticker.holdingsSection", comment: "")).font(.headline)) {
+                if holdings.isEmpty {
+                    Text(L("holdings.empty", comment: ""))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(holdings) { h in
+                        Toggle(isOn: bindingFor(holding: h)) {
+                            HStack {
+                                Text(h.symbol.market == .us ? h.symbol.code.uppercased() : h.symbol.code)
+                                    .monospacedDigit()
+                                Text(h.name)
+                                    .foregroundColor(.secondary)
+                                marketBadge(h.symbol.market)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Section(header: Text(L("ticker.watchlistSection", comment: "")).font(.headline)) {
+                if watchlist.isEmpty {
+                    Text(L("watchlist.empty", comment: ""))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(watchlist) { w in
+                        Toggle(isOn: bindingFor(watch: w)) {
+                            HStack {
+                                Text(w.symbol.market == .us ? w.symbol.code.uppercased() : w.symbol.code)
+                                Text(w.name)
+                                    .foregroundColor(.secondary)
+                                marketBadge(w.symbol.market)
+                            }
+                        }
+                    }
+                }
             }
         }
         .formStyle(.grouped)
         .padding(20)
+        .onAppear(perform: reload)
+    }
+
+    private func marketBadge(_ m: Market) -> some View {
+        Text(m.displayName)
+            .font(.system(size: 10))
+            .foregroundColor(.secondary)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .background(Color.secondary.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+    }
+
+    private func reload() {
+        holdings = (try? container.holdingsRepo.all()) ?? []
+        watchlist = (try? container.watchlistRepo.all()) ?? []
+    }
+
+    private func bindingFor(holding: Holding) -> Binding<Bool> {
+        Binding(
+            get: { holding.inTicker },
+            set: { newValue in
+                var copy = holding
+                copy.inTicker = newValue
+                try? container.holdingsRepo.upsert(copy)
+                reload()
+                container.refresher.refreshNow()
+            }
+        )
+    }
+
+    private func bindingFor(watch: WatchItem) -> Binding<Bool> {
+        Binding(
+            get: { watch.inTicker },
+            set: { newValue in
+                var copy = watch
+                copy.inTicker = newValue
+                try? container.watchlistRepo.upsert(copy)
+                reload()
+                container.refresher.refreshNow()
+            }
+        )
     }
 }

@@ -656,6 +656,18 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "勾选哪些大盘指数显示在菜单栏滚动条。15 秒刷新一次。" } }
       }
     },
+    "ticker.holdingsSection" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Holdings in Ticker" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "滚动条 · 持仓" } }
+      }
+    },
+    "ticker.watchlistSection" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Watchlist in Ticker" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "滚动条 · 自选" } }
+      }
+    },
     "action.importCSV" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Import CSV" } },
