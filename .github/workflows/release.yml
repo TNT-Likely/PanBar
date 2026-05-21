@@ -48,11 +48,18 @@ jobs:
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          # 注意:-t agg 才会同时导入 cert + private key;-t cert 只导证书,签名会失败
           security import $RUNNER_TEMP/cert.p12 \
             -P "$CERT_PASSWORD" \
-            -A -t cert -f pkcs12 \
+            -A -t agg -f pkcs12 \
             -k "$KEYCHAIN_PATH"
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          # 允许 codesign 在非交互场景下访问私钥
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          # 把临时 keychain 加到搜索列表前面,保留 login.keychain
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          # 诊断:确认证书 + 私钥都在
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
       - name: Archive & export
         env:
