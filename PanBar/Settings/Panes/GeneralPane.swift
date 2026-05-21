@@ -51,9 +51,12 @@ private struct GeneralPaneContent: View {
                     }
                 }
                 .onChange(of: language) { value in
-                    // 同时落到 SQLite settings + UserDefaults(启动期会读后者)
                     try? container.settingsRepo.set(SettingsRepository.Keys.language, value.rawValue)
                     UserDefaults.standard.set(value.rawValue, forKey: "panbar.\(SettingsRepository.Keys.language)")
+                    // 关键:必须现在就把 AppleLanguages 写进 UserDefaults。
+                    // 启动期再写就晚了(NSBundle 已经读过 preferredLocalizations)。
+                    LanguageManager.applyOnLaunch(value)
+                    UserDefaults.standard.synchronize()
                     LanguageManager.promptRestart()
                 }
 

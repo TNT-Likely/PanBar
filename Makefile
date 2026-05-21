@@ -43,7 +43,9 @@ gen:
 
 .PHONY: build
 build: gen
-	xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Debug -derivedDataPath $(DERIVED) CODE_SIGNING_ALLOWED=NO build
+	xcodebuild -project $(PROJECT) -scheme $(SCHEME) -configuration Debug -derivedDataPath $(DERIVED) \
+		CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" CODE_SIGN_INJECT_BASE_ENTITLEMENTS=YES \
+		build
 
 .PHONY: run
 run: build

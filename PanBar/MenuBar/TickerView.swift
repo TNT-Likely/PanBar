@@ -53,6 +53,12 @@ final class TickerView: NSView {
     private func commonInit() {
         wantsLayer = true
         layer?.backgroundColor = .clear
+        // 强制走 dark 外观,绕过菜单栏 vibrancy 滤镜对红色的色调推移
+        appearance = NSAppearance(named: .darkAqua)
+        // 把整个 view 的绘制结果先栅格化为单张 bitmap,父层的 vibrancy CIFilter
+        // 就只能在已经合成好的像素上操作,不会再单独把 text 推到橙色
+        layer?.shouldRasterize = true
+        layer?.rasterizationScale = NSScreen.main?.backingScaleFactor ?? 2.0
         let tracking = NSTrackingArea(
             rect: bounds,
             options: [.activeAlways, .mouseEnteredAndExited, .inVisibleRect],
