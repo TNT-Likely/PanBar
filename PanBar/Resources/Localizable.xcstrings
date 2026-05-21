@@ -812,6 +812,84 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请求授权" } }
       }
     },
+    "alerts.primary" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Primary Condition" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "主条件" } }
+      }
+    },
+    "alerts.secondary" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Secondary Condition" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "副条件" } }
+      }
+    },
+    "alerts.secondary.enable" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enable" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "启用" } }
+      }
+    },
+    "alerts.secondary.disabled" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enable to combine two conditions with AND / OR." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "启用后可以再加一条,与主条件用 AND / OR 组合。" } }
+      }
+    },
+    "alerts.logic" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Combine" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "组合方式" } }
+      }
+    },
+    "alert.logic.and" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "AND" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "同时满足 AND" } }
+      }
+    },
+    "alert.logic.or" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OR" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "任一满足 OR" } }
+      }
+    },
+    "alerts.advanced" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Advanced" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "高级" } }
+      }
+    },
+    "alerts.advanced.hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Daily cap resets at midnight (CN time). Trading-hours-only checks if any of A/HK/US market is open." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每日次数上限按北京时间凌晨重置。仅交易时段=任一 A/港/美 市场开盘即可。" } }
+      }
+    },
+    "alerts.dailyCap" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Max triggers per day" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每日最多触发次数" } }
+      }
+    },
+    "alerts.tradingHoursOnly" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Trading hours only" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仅交易时段" } }
+      }
+    },
+    "alerts.weekdaysOnly" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Weekdays only" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "仅工作日" } }
+      }
+    },
+    "alerts.col.todayCount" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Today" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "今日已触发" } }
+      }
+    },
     "action.importCSV" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Import CSV" } },

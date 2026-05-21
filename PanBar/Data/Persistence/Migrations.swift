@@ -55,12 +55,24 @@ enum Migrations {
         }
 
         migrator.registerMigration("v3_in_ticker") { db in
-            // 给每只持仓 / 自选加 inTicker 标记(默认 true,保留现状)
             try db.alter(table: "holding") { t in
                 t.add(column: "inTicker", .boolean).notNull().defaults(to: true)
             }
             try db.alter(table: "watchItem") { t in
                 t.add(column: "inTicker", .boolean).notNull().defaults(to: true)
+            }
+        }
+
+        migrator.registerMigration("v4_alert_advanced") { db in
+            try db.alter(table: "alert") { t in
+                t.add(column: "secondaryCondition", .text)
+                t.add(column: "secondaryThreshold", .text)
+                t.add(column: "conditionLogic", .text).notNull().defaults(to: "and")
+                t.add(column: "maxTriggersPerDay", .integer)            // null = 无限
+                t.add(column: "triggerCountToday", .integer).notNull().defaults(to: 0)
+                t.add(column: "lastTriggerDay", .text)                  // "YYYY-MM-DD"
+                t.add(column: "tradingHoursOnly", .boolean).notNull().defaults(to: false)
+                t.add(column: "weekdaysOnly", .boolean).notNull().defaults(to: false)
             }
         }
 
