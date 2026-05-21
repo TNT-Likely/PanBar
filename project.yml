@@ -14,7 +14,6 @@ settings:
     ENABLE_HARDENED_RUNTIME: YES
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: ""
-    PRODUCT_NAME: PanBar
     INFOPLIST_KEY_NSHumanReadableCopyright: "© 2026 PanBar contributors"
     COMBINE_HIDPI_IMAGES: YES
     ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
@@ -44,7 +43,7 @@ targets:
         LSApplicationCategoryType: public.app-category.finance
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
-        CFBundleDisplayName: PanBar
+        CFBundleDisplayName: "$(BUNDLE_DISPLAY_NAME)"
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
         CFBundleLocalizations:
@@ -57,7 +56,6 @@ targets:
         SUPublicEDKey: ""
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: app.panbar.PanBar
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_PREVIEWS: YES
         # 默认版本号。CI 通过 `xcodebuild MARKETING_VERSION=x.y.z CURRENT_PROJECT_VERSION=NNN` 覆盖。
@@ -65,9 +63,16 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
       configs:
         Debug:
+          # Debug 用独立 bundle ID + 独立 .app 文件名,可以和正式版并排装互不影响
+          PRODUCT_BUNDLE_IDENTIFIER: app.panbar.PanBar.debug
+          PRODUCT_NAME: PanBar-Dev
+          BUNDLE_DISPLAY_NAME: PanBar Dev
           # Debug 走无沙盒 entitlements,Sparkle 不需要 Hardened Runtime 也能加载 XPC
           CODE_SIGN_ENTITLEMENTS: PanBar/Resources/PanBar-Debug.entitlements
         Release:
+          PRODUCT_BUNDLE_IDENTIFIER: app.panbar.PanBar
+          PRODUCT_NAME: PanBar
+          BUNDLE_DISPLAY_NAME: PanBar
           CODE_SIGN_ENTITLEMENTS: PanBar/Resources/PanBar.entitlements
     dependencies:
       - package: GRDB

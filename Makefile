@@ -11,6 +11,10 @@ PROJECT := PanBar.xcodeproj
 SCHEME := PanBar
 DERIVED := build/dd
 APP_NAME := PanBar
+# Debug 用独立 bundle ID + 独立文件名,可以和正式版并排装互不影响
+DEV_APP_NAME := PanBar-Dev
+DEV_BUNDLE_ID := app.panbar.PanBar.debug
+DEV_APP_PATH := $(DERIVED)/Build/Products/Debug/$(DEV_APP_NAME).app
 VERSION ?= 0.1.0
 BUILD_DIR := build/Release
 APP_PATH := $(BUILD_DIR)/$(APP_NAME).app
@@ -25,8 +29,9 @@ export
 help:
 	@echo "PanBar build targets:"
 	@echo "  make gen              # 重新生成 Xcode 项目"
-	@echo "  make build            # Debug 构建"
-	@echo "  make run              # 构建并启动"
+	@echo "  make build            # Debug 构建(PanBar-Dev.app,独立 bundle ID 不影响正式版)"
+	@echo "  make run              # 构建并(重新)启动 PanBar-Dev"
+	@echo "  make kill             # 关掉正在跑的 PanBar-Dev"
 	@echo "  make open             # 在 Xcode 中打开"
 	@echo "  make icons            # 重新生成 AppIcon"
 	@echo "  make release-build    # Release 构建"
@@ -49,11 +54,18 @@ build: gen
 
 .PHONY: run
 run: build
-	open $(DERIVED)/Build/Products/Debug/$(APP_NAME).app
+	@# 先把已经在跑的 dev 版关掉,否则 open 不会重启已有进程,改动看不到
+	@pkill -f "$(DEV_APP_NAME).app/Contents/MacOS" 2>/dev/null; true
+	open $(DEV_APP_PATH)
+	@echo "✓ Launched $(DEV_APP_NAME) ($(DEV_BUNDLE_ID))"
 
 .PHONY: open
 open: gen
 	open $(PROJECT)
+
+.PHONY: kill
+kill:
+	@pkill -f "$(DEV_APP_NAME).app/Contents/MacOS" && echo "✓ Killed $(DEV_APP_NAME)" || echo "(not running)"
 
 .PHONY: icons
 icons:
