@@ -103,19 +103,13 @@ final class ScreenSharingMonitor {
     }
 
     private func detectWithReason() -> Detection {
-        let runningKnown = knownAppsRunning()
-
-        // 层 1:窗口扫描
+        // 只走窗口扫描:精确,无误报。
+        // 进程兜底已移除(只要 Slack/Zoom 在跑就触发,误报太多)。
+        // 用户希望最可靠的方式:⌘⇧⌥P 手动切换隐私模式。
         if let (owner, windowName) = sharingWindow() {
             return Detection(isSharing: true, reason: "window owner=\(owner) name=\(windowName ?? "<nil>")")
         }
-
-        // 层 2:进程兜底 — 已知 app 在跑就视为可能分享
-        if let app = runningKnown.first {
-            return Detection(isSharing: true,
-                             reason: "process running bid=\(app.bundleIdentifier ?? "?") active=\(app.isActive)")
-        }
-        return Detection(isSharing: false, reason: "no signal")
+        return Detection(isSharing: false, reason: "no sharing window detected")
     }
 
     private func knownAppsRunning() -> [NSRunningApplication] {
