@@ -1,0 +1,49 @@
+# PanBar
+
+**A lightweight macOS menu bar app for live stock quotes and portfolio P&L.**
+*macOS 菜单栏上的轻量盯盘工具 — 实时滚动自选股价格,一键查看持仓盈亏。*
+
+[简体中文](README.md) · [English](README.en.md)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-macOS%2013%2B-black?logo=apple)](https://www.apple.com/macos)
+[![Swift](https://img.shields.io/badge/Swift-5.9%2B-orange?logo=swift)](https://swift.org)
+[![CI](https://github.com/TNT-Likely/PanBar/actions/workflows/ci.yml/badge.svg)](https://github.com/TNT-Likely/PanBar/actions/workflows/ci.yml)
+
+![Preview](docs/screenshots/preview.png)
+
+---
+
+## TL;DR
+
+PanBar squeezes A-share / HK / US quotes into a tiny scrolling strip in the macOS menu bar. Click it for a compact 360pt panel showing your portfolio P&L, market indices, and price alerts — no window stealing, no cloud, no tracking.
+
+## Features
+
+- **Scrolling menu bar ticker** — pick which tickers to scroll, plus three summary metrics (today's P&L / total assets / lifetime P&L)
+- **Multi-market** — A-share / HK / US in one place, **auto-aggregated by base currency (¥ / $ / HK$)**
+- **Market indices** — 8 presets (SSE / SZSE / ChiNext / CSI300 / HSI / DJI / NDX / SPX), optionally shown in the ticker
+- **Price alerts** — multi-condition (primary + secondary, AND/OR), daily trigger cap, trading-hours-only, weekdays-only
+- **Configurable data sources** — Tencent / EastMoney / Yahoo / Finnhub, **per-market priority**
+- **Stock search** — Chinese / pinyin / symbol, backed by Tencent smartbox
+- **Privacy mode** — auto-masks the ticker during screen sharing or recording; ⌘⌃M to toggle manually
+- **Color schemes** — Eastern (red-up / green-down), Western (green-up / red-down), or monochrome — switch live
+- **Localization** — Simplified Chinese / English
+- **Custom shortcuts** — global recorder, bind whatever you like
+- **Full backup & restore** — one JSON contains all holdings / watchlist / alerts / settings
+- **Fully local** — SQLite + cold-start FX cache · zero telemetry · zero cloud sync · zero ads
+
+## Install
+
+> **Signed releases are still on the way** (requires Apple Developer ID notarization). For now, build from source:
+
+```bash
+brew install xcodegen create-dmg
+git clone https://github.com/TNT-Likely/PanBar.git
+cd PanBar
+make run         # build & launch
+```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
