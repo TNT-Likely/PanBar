@@ -14,8 +14,11 @@ final class CarouselTickerView: NSView {
     var dwell: CFTimeInterval = 4
     private var lastSwitch: CFTimeInterval = 0
     private var displayLink: CVDisplayLink?
-    private var hovered: Bool = false
+    /// 由 controller 同步过来的 hover 状态
+    var hovered: Bool = false
     var pauseOnHover: Bool = true
+    /// 动画帧或数据更新后通知 controller 重新捕图
+    var onContentChanged: (() -> Void)?
 
     let iconWidth: CGFloat = 18
     var visibleTextWidth: CGFloat = 200
@@ -42,15 +45,6 @@ final class CarouselTickerView: NSView {
         wantsLayer = true
         layer?.backgroundColor = .clear
         appearance = NSAppearance(named: .darkAqua)
-        layer?.shouldRasterize = true
-        layer?.rasterizationScale = NSScreen.main?.backingScaleFactor ?? 2.0
-        let tracking = NSTrackingArea(
-            rect: bounds,
-            options: [.activeAlways, .mouseEnteredAndExited, .inVisibleRect],
-            owner: self,
-            userInfo: nil
-        )
-        addTrackingArea(tracking)
         startAnimation()
     }
 
@@ -58,17 +52,13 @@ final class CarouselTickerView: NSView {
         stopAnimation()
     }
 
-    override func mouseEntered(with event: NSEvent) { hovered = true }
-    override func mouseExited(with event: NSEvent) { hovered = false }
-
     func update(items: [NSAttributedString]) {
         self.items = items
         if currentIndex >= items.count { currentIndex = 0 }
-        // 取所有条目里最宽的那条 +8 padding,保证切换时不裁不跳。
-        // 不设上限:菜单栏本来就允许很宽的 status item,被裁比宽点丑得多。
         let maxW = items.map { $0.size().width }.max() ?? 0
         visibleTextWidth = max(80, maxW + 8)
         needsDisplay = true
+        onContentChanged?()
     }
 
     private func startAnimation() {
@@ -95,26 +85,26 @@ final class CarouselTickerView: NSView {
 
     private func step(now: CFTimeInterval) {
         if items.count <= 1 {
-            return  // 只有一条不切
+            return
         }
         if pauseOnHover && hovered { return }
         if lastSwitch == 0 { lastSwitch = now }
 
         if transition < 1 {
-            // 正在过渡
             let p = min(1, (now - transitionStart) / transitionDuration)
             transition = CGFloat(easeOut(p))
             needsDisplay = true
+            onContentChanged?()
             return
         }
 
         if now - lastSwitch >= dwell {
-            // 切到下一条
             currentIndex = (currentIndex + 1) % items.count
             transitionStart = now
             transition = 0
             lastSwitch = now
             needsDisplay = true
+            onContentChanged?()
         }
     }
 

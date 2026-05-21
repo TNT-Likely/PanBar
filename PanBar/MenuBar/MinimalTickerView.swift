@@ -13,6 +13,8 @@ final class MinimalTickerView: NSView {
     private var content: Content?
     var scheme: TickerColorScheme = .east
     var privacyHidden: Bool = false
+    var hovered: Bool = false
+    var onContentChanged: (() -> Void)?
 
     let iconWidth: CGFloat = 18
     private let valueFont = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
@@ -39,13 +41,12 @@ final class MinimalTickerView: NSView {
         wantsLayer = true
         layer?.backgroundColor = .clear
         appearance = NSAppearance(named: .darkAqua)
-        layer?.shouldRasterize = true
-        layer?.rasterizationScale = NSScreen.main?.backingScaleFactor ?? 2.0
     }
 
     func update(content: Content?) {
         self.content = content
         needsDisplay = true
+        onContentChanged?()
     }
 
     override func draw(_ dirtyRect: NSRect) {

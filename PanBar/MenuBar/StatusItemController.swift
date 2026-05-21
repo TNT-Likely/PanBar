@@ -100,32 +100,58 @@ final class StatusItemController {
         }
     }
 
-    /// 切换 ticker view 时,要把旧的从 button 里摘掉,装上新的。
+    /// 切换 ticker view 时,卸下旧的回调,接上新的。view 不挂到 button 子视图,
+    /// 通过 onContentChanged 回调把渲染好的 NSImage 设给 button.image。
     private func swapTickerView(to mode: TickerDisplayMode) {
-        guard let button = statusItem.button else { return }
-        tickerView.removeFromSuperview()
+        tickerView.onContentChanged = nil
         tickerView = Self.makeView(for: mode, scheme: prefs.colorScheme)
-        button.frame = NSRect(x: 0, y: 0, width: tickerView.totalWidth, height: 22)
-        tickerView.frame = button.bounds
-        tickerView.autoresizingMask = [.width, .height]
-        button.addSubview(tickerView)
-        statusItem.length = tickerView.totalWidth
+        wireUpTickerView()
         currentMode = mode
     }
+
+    /// NSTrackingArea 的 owner 必须是 NSObject + 响应 mouseEntered/Exited。
+    /// 我们用这个小 helper 把回调桥到 controller(StatusItemController 不是 NSObject)。
+    private let hoverProxy = HoverProxy()
 
     private func configure() {
         guard let button = statusItem.button else { return }
         button.frame = NSRect(x: 0, y: 0, width: tickerView.totalWidth, height: 22)
-        tickerView.frame = button.bounds
-        tickerView.autoresizingMask = [.width, .height]
-        button.addSubview(tickerView)
         button.target = self
         button.action = #selector(onClick(_:))
         button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+        // 在 button 上加 tracking area,把 hover 状态转给 view
+        // (view 不在 window 里,自己监听不到 mouseEntered/Exited)
+        hoverProxy.onEnter = { [weak self] in self?.tickerView.hovered = true }
+        hoverProxy.onExit  = { [weak self] in self?.tickerView.hovered = false }
+        let tracking = NSTrackingArea(
+            rect: button.bounds,
+            options: [.activeAlways, .mouseEnteredAndExited, .inVisibleRect],
+            owner: hoverProxy,
+            userInfo: nil
+        )
+        button.addTrackingArea(tracking)
 
-        statusItem.length = tickerView.totalWidth
-
+        wireUpTickerView()
         buildContextMenu()
+    }
+
+    /// 把当前 tickerView 接到 button:订阅内容变化 → 渲染 NSImage → 写回 button.image。
+    /// view 始终不挂到 button 子视图;系统对菜单栏 subview 的 vibrancy 滤镜
+    /// 只对 NSView 树生效,对 NSImage 不生效,这样能避免「app 不激活时颜色变浅」。
+    private func wireUpTickerView() {
+        tickerView.onContentChanged = { [weak self] in
+            self?.refreshButtonImage()
+        }
+        refreshButtonImage()
+    }
+
+    /// 把当前 tickerView 渲染到 NSImage 并设给 button。
+    private func refreshButtonImage() {
+        guard let button = statusItem.button else { return }
+        let image = tickerView.renderImage()
+        button.image = image
+        button.imagePosition = .imageOnly
+        statusItem.length = tickerView.totalWidth
     }
 
     /// 各模式根据当前数据自己组装,写回到 statusItem.length。
@@ -461,7 +487,7 @@ final class StatusItemController {
     private func updateTickerVisibility(autoSharing: Bool) {
         let shouldHide = privacyHidden || autoSharing
         tickerView.privacyHidden = shouldHide
-        tickerView.needsDisplay = true
+        refreshButtonImage()
     }
 
     @objc private func quit() {

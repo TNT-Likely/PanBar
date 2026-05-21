@@ -10,8 +10,11 @@ final class TickerView: NSView {
     var pixelsPerSecond: CGFloat = 30
     /// 是否在 hover 时暂停。
     var pauseOnHover: Bool = true
-    private var hovered: Bool = false
+    /// 由 controller 同步过来的 hover 状态(view 不在 window 里,自己监听不到)
+    var hovered: Bool = false
     private var paused: Bool = false
+    /// 动画帧或数据更新后,通知 controller 重新捕图。
+    var onContentChanged: (() -> Void)?
     private var displayLink: CVDisplayLink?
     private var lastTimestamp: CFTimeInterval = 0
     /// 文字与图标之间的间距。
@@ -53,19 +56,7 @@ final class TickerView: NSView {
     private func commonInit() {
         wantsLayer = true
         layer?.backgroundColor = .clear
-        // 强制走 dark 外观,绕过菜单栏 vibrancy 滤镜对红色的色调推移
         appearance = NSAppearance(named: .darkAqua)
-        // 把整个 view 的绘制结果先栅格化为单张 bitmap,父层的 vibrancy CIFilter
-        // 就只能在已经合成好的像素上操作,不会再单独把 text 推到橙色
-        layer?.shouldRasterize = true
-        layer?.rasterizationScale = NSScreen.main?.backingScaleFactor ?? 2.0
-        let tracking = NSTrackingArea(
-            rect: bounds,
-            options: [.activeAlways, .mouseEnteredAndExited, .inVisibleRect],
-            owner: self,
-            userInfo: nil
-        )
-        addTrackingArea(tracking)
         startAnimation()
     }
 
@@ -73,20 +64,17 @@ final class TickerView: NSView {
         stopAnimation()
     }
 
-    override func mouseEntered(with event: NSEvent) { hovered = true }
-    override func mouseExited(with event: NSEvent) { hovered = false }
-
     // MARK: data
 
     func update(attributed: NSAttributedString) {
         self.attributed = attributed
         self.attributedWidth = attributed.size().width
         if attributedWidth + loopGap > 0 {
-            // 偏移取模到合法范围,避免数据更新后跳动太远
             offset = offset.truncatingRemainder(dividingBy: attributedWidth + loopGap)
             if offset < 0 { offset += attributedWidth + loopGap }
         }
         needsDisplay = true
+        onContentChanged?()
     }
 
     func setPaused(_ value: Bool) {
@@ -123,7 +111,7 @@ final class TickerView: NSView {
         defer { lastTimestamp = timestamp }
         if lastTimestamp == 0 { return }
         let dt = timestamp - lastTimestamp
-        if dt <= 0 || dt > 0.2 { return }   // 异常 dt 丢弃
+        if dt <= 0 || dt > 0.2 { return }
         if paused || (pauseOnHover && hovered) { return }
         if attributedWidth <= 0 { return }
 
@@ -131,6 +119,7 @@ final class TickerView: NSView {
         let cycle = attributedWidth + loopGap
         if offset > cycle { offset -= cycle }
         needsDisplay = true
+        onContentChanged?()
     }
 
     // MARK: draw

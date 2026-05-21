@@ -13,6 +13,9 @@ final class CompactTickerView: NSView {
     private var slots: Slots = Slots(todayPnL: nil, allTimePnL: nil, totalAssets: nil, baseCurrency: .cny)
     var scheme: TickerColorScheme = .east
     var privacyHidden: Bool = false
+    /// hover 状态(放着满足协议,固定模式实际用不到)
+    var hovered: Bool = false
+    var onContentChanged: (() -> Void)?
 
     let iconWidth: CGFloat = 18
     private let slotSpacing: CGFloat = 10
@@ -52,13 +55,12 @@ final class CompactTickerView: NSView {
         wantsLayer = true
         layer?.backgroundColor = .clear
         appearance = NSAppearance(named: .darkAqua)
-        layer?.shouldRasterize = true
-        layer?.rasterizationScale = NSScreen.main?.backingScaleFactor ?? 2.0
     }
 
     func update(slots: Slots) {
         self.slots = slots
         needsDisplay = true
+        onContentChanged?()
     }
 
     override func draw(_ dirtyRect: NSRect) {
