@@ -110,6 +110,10 @@ extension EnvironmentValues {
 struct SettingsRootView: View {
     enum Pane: String, CaseIterable, Identifiable {
         case general, ticker, portfolio, watchlist, alerts, dataSources, fx, markets, about
+        #if DEBUG
+        case debug
+        #endif
+
         var id: String { rawValue }
         var title: String {
             switch self {
@@ -122,6 +126,9 @@ struct SettingsRootView: View {
             case .fx:          return L("settings.fx", comment: "")
             case .markets:     return L("settings.markets", comment: "")
             case .about:       return L("settings.about", comment: "")
+            #if DEBUG
+            case .debug:       return "Debug"
+            #endif
             }
         }
         var icon: String {
@@ -135,6 +142,9 @@ struct SettingsRootView: View {
             case .fx:          return "dollarsign.arrow.circlepath"
             case .markets:     return "clock"
             case .about:       return "info.circle"
+            #if DEBUG
+            case .debug:       return "ladybug"
+            #endif
             }
         }
     }
@@ -158,6 +168,9 @@ struct SettingsRootView: View {
             case .fx:          FXPane()
             case .markets:     MarketsPane()
             case .about:       AboutPane()
+            #if DEBUG
+            case .debug:       DebugPane()
+            #endif
             }
         }
     }
