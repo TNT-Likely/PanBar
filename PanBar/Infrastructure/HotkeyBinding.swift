@@ -46,8 +46,8 @@ struct HotkeyBinding: Codable, Equatable, Sendable {
         carbonModifiers: UInt32(cmdKey | shiftKey)
     )
     static let defaultTogglePrivacy = HotkeyBinding(
-        keyCode: UInt16(kVK_ANSI_H),
-        carbonModifiers: UInt32(controlKey | optionKey)
+        keyCode: UInt16(kVK_ANSI_M),
+        carbonModifiers: UInt32(cmdKey | shiftKey)
     )
 
     // MARK: keyCode → 字符
