@@ -64,9 +64,10 @@ final class CarouselTickerView: NSView {
     func update(items: [NSAttributedString]) {
         self.items = items
         if currentIndex >= items.count { currentIndex = 0 }
-        // 计算最长一条的宽度,统一让 visibleTextWidth 容得下,避免切换时宽度跳
+        // 取所有条目里最宽的那条 +8 padding,保证切换时不裁不跳。
+        // 不设上限:菜单栏本来就允许很宽的 status item,被裁比宽点丑得多。
         let maxW = items.map { $0.size().width }.max() ?? 0
-        visibleTextWidth = max(80, min(400, maxW + 8))
+        visibleTextWidth = max(80, maxW + 8)
         needsDisplay = true
     }
 
@@ -162,13 +163,6 @@ final class CarouselTickerView: NSView {
     }
 
     private func drawIcon(in rect: NSRect) {
-        let attr: [NSAttributedString.Key: Any] = [
-            .font: NSFont.boldSystemFont(ofSize: 12),
-            .foregroundColor: NSColor.labelColor
-        ]
-        let str = NSAttributedString(string: "P", attributes: attr)
-        let size = str.size()
-        let p = NSPoint(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2)
-        str.draw(at: p)
+        MenuBarIcon.draw(in: rect)
     }
 }

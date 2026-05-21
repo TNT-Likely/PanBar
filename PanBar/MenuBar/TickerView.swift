@@ -177,17 +177,6 @@ final class TickerView: NSView {
     }
 
     private func drawIcon(in rect: NSRect) {
-        let label = "P"
-        let attr: [NSAttributedString.Key: Any] = [
-            .font: NSFont.boldSystemFont(ofSize: 12),
-            .foregroundColor: NSColor.labelColor
-        ]
-        let str = NSAttributedString(string: label, attributes: attr)
-        let size = str.size()
-        let p = NSPoint(
-            x: rect.midX - size.width / 2,
-            y: rect.midY - size.height / 2
-        )
-        str.draw(at: p)
+        MenuBarIcon.draw(in: rect)
     }
 }

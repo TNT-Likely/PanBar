@@ -110,13 +110,6 @@ final class MinimalTickerView: NSView {
     }
 
     private func drawIcon(in rect: NSRect) {
-        let attr: [NSAttributedString.Key: Any] = [
-            .font: NSFont.boldSystemFont(ofSize: 12),
-            .foregroundColor: NSColor.labelColor
-        ]
-        let str = NSAttributedString(string: "P", attributes: attr)
-        let size = str.size()
-        let p = NSPoint(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2)
-        str.draw(at: p)
+        MenuBarIcon.draw(in: rect)
     }
 }
