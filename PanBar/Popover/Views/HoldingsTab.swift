@@ -13,7 +13,12 @@ struct HoldingsTab: View {
                     emptyState
                 } else {
                     ForEach(refresher.snapshot.positions) { pos in
-                        HoldingRow(position: pos, density: appearance.density, scheme: prefs.colorScheme)
+                        HoldingRow(
+                            position: pos,
+                            density: appearance.density,
+                            scheme: prefs.colorScheme,
+                            baseCurrency: refresher.snapshot.baseCurrency
+                        )
                             .contextMenu {
                                 Button(L("action.openInBrowser", comment: "")) {
                                     openInBrowser(pos.holding.symbol)
@@ -63,6 +68,7 @@ private struct HoldingRow: View {
     let position: HoldingPosition
     let density: PopoverDensity
     let scheme: TickerColorScheme
+    let baseCurrency: Currency
 
     var body: some View {
         let h = position.holding
@@ -92,10 +98,17 @@ private struct HoldingRow: View {
                         pctPill(q.changePct)
                     }
                 }
-                Text(signedPnL(position.pnl))
+                Text(signedPnL(position.pnl, currency: h.currency))
                     .font(.system(size: 11))
                     .foregroundColor(pnlColor(position.pnl))
                     .monospacedDigit()
+                // 本位币换算(原币种 != 本位币 时才显示)
+                if h.currency != baseCurrency, let basePnL = position.basePnL {
+                    Text("≈ " + signedPnL(basePnL, currency: baseCurrency))
+                        .font(.system(size: 10))
+                        .foregroundColor(pnlColor(position.pnl).opacity(0.7))
+                        .monospacedDigit()
+                }
             }
         }
         .padding(.horizontal, density.rowHorizontalPadding)
@@ -112,9 +125,9 @@ private struct HoldingRow: View {
         return String(format: L("holding.detail", comment: ""), qtyDisplay, costDisplay)
     }
 
-    private func signedPnL(_ value: Decimal) -> String {
+    private func signedPnL(_ value: Decimal, currency: Currency) -> String {
         let sign = value >= 0 ? "+" : "-"
-        return sign + position.holding.currency.format(value.magnitude)
+        return sign + currency.format(value.magnitude)
     }
 
     private func pnlColor(_ value: Decimal) -> Color {
