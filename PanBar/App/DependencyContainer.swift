@@ -71,6 +71,7 @@ final class DependencyContainer {
         self.alertEngine = AlertEngine(alertsRepo: alertsRepo, notifier: NotificationService.shared)
         self.refresher = QuoteRefresher(
             service: portfolioService,
+            indexService: indexService,
             clock: clock,
             alertEngine: alertEngine
         )

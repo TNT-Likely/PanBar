@@ -1,9 +1,10 @@
 import Foundation
 import AppKit
 
-/// 菜单栏滚动条上一格内容。可以是一只股票行情,也可以是汇总指标(今日盈亏 / 总资产 / 累计盈亏)。
+/// 菜单栏滚动条上一格内容。可以是一只股票行情、一个大盘指数、或者汇总指标。
 enum TickerItem {
     case quote(Quote)
+    case index(IndexQuote)
     /// 汇总项,自带方向(用于配色):.up / .down / .neutral
     case summary(label: String, value: String, direction: TickerDirection)
 }
@@ -48,11 +49,37 @@ struct TickerRenderer {
             switch item {
             case .quote(let q):
                 out.append(piece(for: q))
+            case .index(let iq):
+                out.append(indexPiece(for: iq))
             case .summary(let label, let value, let dir):
                 out.append(summaryPiece(label: label, value: value, direction: dir))
             }
         }
         return out
+    }
+
+    private func indexPiece(for q: IndexQuote) -> NSAttributedString {
+        let nameAttr: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: NSColor.white.withAlphaComponent(0.92)
+        ]
+        let valueAttr: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: font.pointSize, weight: .regular),
+            .foregroundColor: NSColor.white.withAlphaComponent(0.75)
+        ]
+        let pctColor = q.change >= 0 ? upColor : downColor
+        let pctAttr: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: font.pointSize, weight: .semibold),
+            .foregroundColor: pctColor
+        ]
+        let pctSign = q.change >= 0 ? "+" : ""
+        let pctText = String(format: "%@%.2f%%", pctSign, q.changePct * 100)
+
+        let s = NSMutableAttributedString()
+        s.append(NSAttributedString(string: q.descriptor.displayName + " ", attributes: nameAttr))
+        s.append(NSAttributedString(string: formatPrice(q.price) + " ", attributes: valueAttr))
+        s.append(NSAttributedString(string: pctText, attributes: pctAttr))
+        return s
     }
 
     private func summaryPiece(label: String, value: String, direction: TickerDirection) -> NSAttributedString {

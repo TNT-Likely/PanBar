@@ -644,6 +644,18 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示滚动" } }
       }
     },
+    "ticker.indicesSection" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Indices in Ticker" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "滚动条 · 大盘指数" } }
+      }
+    },
+    "ticker.indicesHint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pick which indices appear in the menu bar scroller. Refreshed every 15s." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "勾选哪些大盘指数显示在菜单栏滚动条。15 秒刷新一次。" } }
+      }
+    },
     "action.importCSV" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Import CSV" } },

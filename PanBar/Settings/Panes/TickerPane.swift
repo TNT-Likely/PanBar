@@ -44,6 +44,33 @@ private struct TickerPaneContent: View {
                     .foregroundColor(.secondary)
             }
 
+            Section(header: Text(L("ticker.indicesSection", comment: "")).font(.headline)) {
+                ForEach(IndexCatalog.all) { desc in
+                    Toggle(isOn: Binding(
+                        get: { prefs.tickerIndexIDs.contains(desc.id) },
+                        set: { newValue in
+                            var s = prefs.tickerIndexIDs
+                            if newValue { s.insert(desc.id) } else { s.remove(desc.id) }
+                            prefs.tickerIndexIDs = s
+                        }
+                    )) {
+                        HStack {
+                            Text(desc.displayName)
+                            Text(desc.market.displayName)
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(Color.secondary.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 3))
+                        }
+                    }
+                }
+                Text(L("ticker.indicesHint", comment: ""))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
             Section(header: Text(L("ticker.itemsHint.title", comment: "")).font(.headline)) {
                 Text(L("ticker.itemsHint.body", comment: ""))
                     .font(.caption)

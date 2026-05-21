@@ -104,11 +104,19 @@ final class StatusItemController {
             }
             .store(in: &cancellables)
 
+        // 指数变动也要重渲染(否则用户勾选了大盘但 ticker 不更新)
+        refresher.$indexQuotes
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                self.applyQuotes(self.refresher.quotes)
+            }
+            .store(in: &cancellables)
+
         // 任何 ticker 偏好变化 → 立即重渲染
         prefs.objectWillChange
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                // objectWillChange 触发时 prefs 旧值仍然存在,稍后异步读新值
                 DispatchQueue.main.async { self?.applyPrefs() }
             }
             .store(in: &cancellables)
@@ -141,7 +149,18 @@ final class StatusItemController {
             items.append(.summary(label: L("summary.allTime", comment: ""), value: value, direction: dir))
         }
 
-        // 2) 持仓行情:只取勾选 inTicker=true 的
+        // 2) 大盘指数:用户勾选的(用 IndexCatalog 顺序排列)
+        let enabledIDs = prefs.tickerIndexIDs
+        if !enabledIDs.isEmpty {
+            let byID = Dictionary(uniqueKeysWithValues: refresher.indexQuotes.map { ($0.descriptor.id, $0) })
+            for desc in IndexCatalog.all where enabledIDs.contains(desc.id) {
+                if let iq = byID[desc.id] {
+                    items.append(.index(iq))
+                }
+            }
+        }
+
+        // 3) 持仓行情:只取勾选 inTicker=true 的
         var seen = Set<SymbolID>()
         for p in snap.positions where p.holding.inTicker {
             if let q = quotes[p.holding.symbol] {
@@ -149,7 +168,7 @@ final class StatusItemController {
                 seen.insert(p.holding.symbol)
             }
         }
-        // 3) 自选行情:只取勾选 inTicker=true 的
+        // 4) 自选行情:只取勾选 inTicker=true 的
         let watchlist = (try? holdingsRepoFetchSiblingWatch()) ?? []
         for w in watchlist where w.inTicker && !seen.contains(w.symbol) {
             if let q = quotes[w.symbol] {
@@ -157,12 +176,18 @@ final class StatusItemController {
             }
         }
 
-        // 4) 应用上限(只对股票行情生效,summary 始终都展示)
+        // 5) 应用上限(只对股票 + 指数行情生效,summary 始终展示)
         let stockCap = max(1, prefs.maxItems)
-        let summaries = items.filter { if case .summary = $0 { return true } else { return false } }
-        let quotesItems = items.filter { if case .quote = $0 { return true } else { return false } }
-        let cappedQuotes = Array(quotesItems.prefix(stockCap))
-        items = summaries + cappedQuotes
+        var summaries: [TickerItem] = []
+        var lineItems: [TickerItem] = []
+        for it in items {
+            switch it {
+            case .summary: summaries.append(it)
+            case .quote, .index: lineItems.append(it)
+            }
+        }
+        let capped = Array(lineItems.prefix(stockCap))
+        items = summaries + capped
 
         let attr = renderer.render(items: items)
         tickerView.update(attributed: attr)

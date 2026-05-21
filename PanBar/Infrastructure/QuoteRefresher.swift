@@ -23,21 +23,25 @@ final class QuoteRefresher: ObservableObject {
 
     @Published private(set) var snapshot: PortfolioSnapshot = .empty
     @Published private(set) var quotes: [SymbolID: Quote] = [:]
+    @Published private(set) var indexQuotes: [IndexQuote] = []
     @Published private(set) var lastError: String?
     @Published private(set) var lastUpdated: Date?
 
     private let service: PortfolioService
+    private let indexService: IndexService
     private let clock: MarketClock
     private let alertEngine: AlertEngine?
     private var task: Task<Void, Never>?
+    private var indexTask: Task<Void, Never>?
     private var pace: Pace = .tickerOnly
     private var popoverOpen = false
     private var sleeping = false
     private var offline = false
     private var observers: [NSObjectProtocol] = []
 
-    init(service: PortfolioService, clock: MarketClock, alertEngine: AlertEngine? = nil) {
+    init(service: PortfolioService, indexService: IndexService, clock: MarketClock, alertEngine: AlertEngine? = nil) {
         self.service = service
+        self.indexService = indexService
         self.clock = clock
         self.alertEngine = alertEngine
         observeSystem()
@@ -60,11 +64,16 @@ final class QuoteRefresher: ObservableObject {
         task = Task { [weak self] in
             await self?.runLoop()
         }
+        indexTask = Task { [weak self] in
+            await self?.runIndexLoop()
+        }
     }
 
     func stop() {
         task?.cancel()
         task = nil
+        indexTask?.cancel()
+        indexTask = nil
     }
 
     /// 触发立即刷新一次(不影响调度)。
@@ -125,6 +134,28 @@ final class QuoteRefresher: ObservableObject {
             try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
             if Task.isCancelled { break }
             await tick()
+        }
+    }
+
+    /// 指数轮询:跑独立 Task,间隔比股票长(15s),休眠/离线时暂停。
+    private func runIndexLoop() async {
+        await tickIndices()
+        while !Task.isCancelled {
+            try? await Task.sleep(nanoseconds: 15_000_000_000)
+            if Task.isCancelled { break }
+            if sleeping || offline { continue }
+            await tickIndices()
+        }
+    }
+
+    private func tickIndices() async {
+        do {
+            let result = try await indexService.fetchAll()
+            await MainActor.run {
+                self.indexQuotes = result
+            }
+        } catch {
+            Log.quote.warning("index fetch failed: \(String(describing: error), privacy: .public)")
         }
     }
 

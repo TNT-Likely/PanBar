@@ -32,6 +32,15 @@ final class TickerPreferences: ObservableObject {
     @Published var showAllTimePnL: Bool {
         didSet { try? repo.set(SettingsRepository.Keys.tickerShowAllTimePnL, showAllTimePnL ? "1" : "0") }
     }
+    /// 哪些大盘指数显示在滚动条中(存 IndexDescriptor.id 集合)。
+    @Published var tickerIndexIDs: Set<String> {
+        didSet {
+            if let data = try? JSONEncoder().encode(Array(tickerIndexIDs).sorted()),
+               let json = String(data: data, encoding: .utf8) {
+                try? repo.set(SettingsRepository.Keys.tickerIndexIDs, json)
+            }
+        }
+    }
 
     private let repo: SettingsRepository
 
@@ -46,6 +55,13 @@ final class TickerPreferences: ObservableObject {
         self.showTotalAssets = repo.string(SettingsRepository.Keys.tickerShowTotalAssets) == "1"
         self.showTodayPnL = repo.string(SettingsRepository.Keys.tickerShowTodayPnL) == "1"
         self.showAllTimePnL = repo.string(SettingsRepository.Keys.tickerShowAllTimePnL) == "1"
+        if let json = repo.string(SettingsRepository.Keys.tickerIndexIDs),
+           let data = json.data(using: .utf8),
+           let arr = try? JSONDecoder().decode([String].self, from: data) {
+            self.tickerIndexIDs = Set(arr)
+        } else {
+            self.tickerIndexIDs = []
+        }
     }
 }
 

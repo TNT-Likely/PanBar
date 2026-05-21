@@ -40,6 +40,7 @@ struct SettingsRepository {
         static let tickerShowAllTimePnL = "ticker_show_alltime_pnl"
         static let hideOnScreenShare = "hide_on_screen_share"
         static let privacyManualHide = "privacy_manual_hide"
+        static let tickerIndexIDs = "ticker_index_ids"
     }
 
     var baseCurrency: Currency {
