@@ -12,7 +12,7 @@
 [![Release](https://img.shields.io/github/v/release/TNT-Likely/PanBar?color=brightgreen&logo=github)](https://github.com/TNT-Likely/PanBar/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/TNT-Likely/PanBar/total?color=blue&logo=github)](https://github.com/TNT-Likely/PanBar/releases)
 
-![Preview](docs/screenshots/preview.png)
+![Preview](docs/screenshots/preview.gif)
 
 ---
 
