@@ -50,7 +50,7 @@ targets:
           - zh-Hans
           - en
         CFBundleDevelopmentRegion: zh-Hans
-        SUFeedURL: https://tnt-likely.github.io/PanBar/appcast.xml
+        SUFeedURL: https://raw.githubusercontent.com/TNT-Likely/PanBar/main/appcast.xml
         SUEnableAutomaticChecks: true
         SUScheduledCheckInterval: 86400
         SUPublicEDKey: ""

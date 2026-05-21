@@ -63,11 +63,14 @@ build/sparkle-tools/bin/generate_keys
 | `APPLE_APP_SPECIFIC_PASSWORD` | 0.2 生成的 app-specific 密码 |
 | `APPLE_TEAM_ID` | 10 位 Team ID |
 
-### 0.6 GitHub Pages(放 appcast.xml)
+### 0.6 appcast.xml(Sparkle feed)
 
-- 仓库 Settings → Pages → Source: `main` branch / `/docs` 目录
-- 把生成的 `appcast.xml` 放到 `docs/` 下
-- 访问 `https://tnt-likely.github.io/PanBar/appcast.xml` 验证可达
+appcast.xml 直接放在仓库根目录,通过 `raw.githubusercontent.com` 提供:
+`https://raw.githubusercontent.com/TNT-Likely/PanBar/main/appcast.xml`
+
+CI(release.yml 里的「Append appcast item + push to main」step)在每次成功发版后
+会自动往 appcast.xml 里追加一条 `<item>` 并 push 回 main,**不需要手动维护**。
+也因此**不需要启用 GitHub Pages**,省一层托管。
 
 ---
 
@@ -91,7 +94,7 @@ make dmg VERSION=$VERSION
 
 # 6) 生成 Sparkle 的 appcast 条目
 build/sparkle-tools/bin/generate_appcast build/
-# → 把生成的 build/appcast.xml 拷到 docs/ 提交 push
+# → 把生成的 build/appcast.xml 内容合并到根目录 appcast.xml 并 push
 
 # 7) 创建 tag 与 GitHub Release
 git tag $VERSION
@@ -118,8 +121,10 @@ GitHub Actions `.github/workflows/release.yml` 会自动:
 3. 公证 + staple
 4. 打 DMG + ZIP
 5. 创建 GitHub Release 并上传产物
+6. 往根目录 `appcast.xml` 追加一条 `<item>` 并 push 回 main
 
-随后手动运行 `generate_appcast` 更新 `docs/appcast.xml` 推送,Sparkle 即可生效。
+Sparkle 客户端拉 `https://raw.githubusercontent.com/TNT-Likely/PanBar/main/appcast.xml`
+读到最新 item 后就能弹更新对话框,**全自动**。
 
 ---
 

@@ -5,10 +5,6 @@
     <link>https://github.com/TNT-Likely/PanBar</link>
     <description>PanBar — macOS menu bar stock ticker</description>
     <language>zh-Hans</language>
-    <!--
-      占位 appcast。等真正打 Release tag 后,GitHub Actions 会用
-      generate_appcast 工具重写这个文件,加入 <item> 节点。
-      现在为空 item 列表,Sparkle 会显示"You're up to date"。
-    -->
+    <!-- release.yml 的「Update appcast」step 会在每次发版后往这里追加 <item> 节点。 -->
   </channel>
 </rss>
