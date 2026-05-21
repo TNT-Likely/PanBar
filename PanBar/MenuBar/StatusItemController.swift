@@ -136,10 +136,17 @@ final class StatusItemController {
             view.update(attributed: renderer.render(items: items))
         case .carousel:
             guard let view = tickerView as? CarouselTickerView else { return }
-            let items = buildTickerItems(quotes: quotes)
-            // 单条单条渲染,carousel 每次轮播切一条
-            let per = items.map { renderer.render(items: [$0]) }
-            view.update(items: per)
+            // 汇总用 compact 简写格式拼成一条(「今 +¥8194  累 -¥29.6万  总 ¥64.9万」),
+            // 个股 / 指数各自单条。这样首屏看到的是简写总览,后续轮播看个股。
+            var slots: [NSAttributedString] = []
+            if let summary = buildCompactSummaryString() {
+                slots.append(summary)
+            }
+            let lineItems = buildLineItems(quotes: quotes)
+            for it in lineItems {
+                slots.append(renderer.render(items: [it]))
+            }
+            view.update(items: slots)
         case .compact:
             guard let view = tickerView as? CompactTickerView else { return }
             let snap = refresher.snapshot
@@ -243,6 +250,78 @@ final class StatusItemController {
 
     private func applyQuotes(_ quotes: [SymbolID: Quote]) {
         render(quotes: quotes)
+    }
+
+    /// Carousel 模式:把启用的汇总指标拼成一条 compact 简写字符串。
+    /// 没启用任何汇总时返回 nil。
+    private func buildCompactSummaryString() -> NSAttributedString? {
+        let snap = refresher.snapshot
+        let font = NSFont.menuBarFont(ofSize: 0)
+        var pieces: [NSAttributedString] = []
+
+        let labelAttr: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: font.pointSize - 1, weight: .semibold),
+            .foregroundColor: NSColor.white.withAlphaComponent(0.55),
+            .kern: 0.3
+        ]
+        func valueAttr(_ dir: TickerDirection) -> [NSAttributedString.Key: Any] {
+            let color: NSColor
+            switch dir {
+            case .up:      color = SemanticColors.upNS(scheme: prefs.colorScheme)
+            case .down:    color = SemanticColors.downNS(scheme: prefs.colorScheme)
+            case .neutral: color = NSColor.white.withAlphaComponent(0.92)
+            }
+            return [
+                .font: NSFont.monospacedDigitSystemFont(ofSize: font.pointSize, weight: .semibold),
+                .foregroundColor: color
+            ]
+        }
+
+        func appendPiece(label: String, value: Decimal, direction: TickerDirection) {
+            let s = NSMutableAttributedString()
+            s.append(NSAttributedString(string: label + " ", attributes: labelAttr))
+            let text: String
+            if direction == .neutral {
+                text = NumberAbbreviation.formatCurrency(value, currency: snap.baseCurrency)
+            } else {
+                let sign = value < 0 ? "-" : "+"
+                text = sign + snap.baseCurrency.symbol +
+                       NumberAbbreviation.format(value, currency: snap.baseCurrency)
+            }
+            s.append(NSAttributedString(string: text, attributes: valueAttr(direction)))
+            pieces.append(s)
+        }
+
+        if prefs.showTodayPnL {
+            let dir: TickerDirection = snap.todayPnL > 0 ? .up : (snap.todayPnL < 0 ? .down : .neutral)
+            appendPiece(label: L("compact.label.today", comment: ""), value: snap.todayPnL, direction: dir)
+        }
+        if prefs.showAllTimePnL {
+            let dir: TickerDirection = snap.allTimePnL > 0 ? .up : (snap.allTimePnL < 0 ? .down : .neutral)
+            appendPiece(label: L("compact.label.allTime", comment: ""), value: snap.allTimePnL, direction: dir)
+        }
+        if prefs.showTotalAssets, snap.totalAssets > 0 {
+            appendPiece(label: L("compact.label.total", comment: ""), value: snap.totalAssets, direction: .neutral)
+        }
+
+        guard !pieces.isEmpty else { return nil }
+        let out = NSMutableAttributedString()
+        let separator = NSAttributedString(string: "  ", attributes: labelAttr)
+        for (i, p) in pieces.enumerated() {
+            if i > 0 { out.append(separator) }
+            out.append(p)
+        }
+        return out
+    }
+
+    /// 取 quotes / 指数那一类的 ticker item(不包含 summary),供 carousel 用。
+    private func buildLineItems(quotes: [SymbolID: Quote]) -> [TickerItem] {
+        return buildTickerItems(quotes: quotes).filter { item in
+            switch item {
+            case .summary: return false
+            case .quote, .index: return true
+            }
+        }
     }
 
     /// 把 quotes / snapshot / 偏好聚合成 [TickerItem],scroll / carousel 共用。
