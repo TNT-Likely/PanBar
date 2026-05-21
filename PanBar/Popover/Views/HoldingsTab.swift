@@ -21,32 +21,18 @@ struct HoldingsTab: View {
                         emptyState
                     } else {
                         ForEach(vm.holdings) { holding in
-                            ZStack(alignment: .trailing) {
-                                HoldingRow(
-                                    holding: holding,
-                                    quote: refresher.quotes[holding.symbol],
-                                    position: positionsByID[holding.id],
-                                    density: appearance.density,
-                                    scheme: prefs.colorScheme,
-                                    baseCurrency: refresher.snapshot.baseCurrency
-                                )
-                                // hover 浮出的铅笔编辑按钮(只对持仓有,自选 / 大盘不需要编辑)
-                                if hoveredID == holding.id {
-                                    Button(action: { openEdit(holding) }) {
-                                        Image(systemName: "pencil.circle.fill")
-                                            .font(.system(size: 16))
-                                            .foregroundColor(.accentColor)
-                                            .padding(4)
-                                            .background(
-                                                Circle().fill(.regularMaterial).shadow(radius: 1)
-                                            )
-                                    }
-                                    .buttonStyle(.plain)
-                                    .padding(.trailing, 6)
-                                    .help(L("action.edit", comment: ""))
-                                    .transition(.opacity.combined(with: .scale))
-                                }
-                            }
+                            // 编辑按钮以 hover 时是否显示的形式传给 HoldingRow,在 name 后面 inline 出现,
+                            // 不再用 ZStack 覆盖右侧(挡住涨跌幅 pill)。
+                            HoldingRow(
+                                holding: holding,
+                                quote: refresher.quotes[holding.symbol],
+                                position: positionsByID[holding.id],
+                                density: appearance.density,
+                                scheme: prefs.colorScheme,
+                                baseCurrency: refresher.snapshot.baseCurrency,
+                                showEditButton: hoveredID == holding.id,
+                                onEdit: { openEdit(holding) }
+                            )
                             .contentShape(Rectangle())
                             .onHover { hovering in
                                 withAnimation(.easeInOut(duration: 0.12)) {
@@ -142,6 +128,9 @@ private struct HoldingRow: View {
     let density: PopoverDensity
     let scheme: TickerColorScheme
     let baseCurrency: Currency
+    /// hover 时显示 inline 编辑铅笔(放在 name 后面,不挡涨跌)
+    let showEditButton: Bool
+    let onEdit: () -> Void
 
     /// 只要有 quote(无论 position 有没有),立即就能算出原币种的盈亏。
     /// 本位币换算需要 FX,只能依赖 position。
@@ -166,6 +155,16 @@ private struct HoldingRow: View {
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
+                    if showEditButton {
+                        Button(action: onEdit) {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(.accentColor)
+                        }
+                        .buttonStyle(.plain)
+                        .help(L("action.edit", comment: ""))
+                        .transition(.opacity)
+                    }
                 }
                 // 右侧 3 行时,在两条左侧文字之间塞 Spacer 把第二行推到底,
                 // 跟右侧的第三行(≈ base)平齐。右侧 2 行时不撑,正常紧贴排。
