@@ -12,5 +12,11 @@
       <pubDate>Thu, 21 May 2026 11:42:22 +0000</pubDate>
       <enclosure url="https://github.com/TNT-Likely/PanBar/releases/download/0.2.0/PanBar-0.2.0.zip" sparkle:version="0.2.0" length="5195022" type="application/octet-stream" />
     </item>
+    <item>
+      <title>PanBar 0.2.1</title>
+      <sparkle:version>0.2.1</sparkle:version>
+      <pubDate>Thu, 21 May 2026 12:48:53 +0000</pubDate>
+      <enclosure url="https://github.com/TNT-Likely/PanBar/releases/download/0.2.1/PanBar-0.2.1.zip" sparkle:version="0.2.1" length="5194929" type="application/octet-stream" />
+    </item>
   </channel>
 </rss>
