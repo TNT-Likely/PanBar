@@ -2,8 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>com.apple.security.app-sandbox</key>
-  <true/>
+  <!--
+    不开沙盒,理由:
+    - Sparkle 自动更新的 XPC services 在沙盒里加载不了(检查更新点了没反应就是这个)
+    - ScreenSharingMonitor 要扫别人 app 的窗口,沙盒下拿不到
+    - 备份导入导出走 user-selected,实际跟沙盒模式差不多
+    - 反正没要上 App Store,沙盒不是硬性要求
+    保留 Hardened Runtime(在 project.yml ENABLE_HARDENED_RUNTIME=YES)+
+    Developer ID 公证,Gatekeeper 信任度跟沙盒应用一样高。
+  -->
   <key>com.apple.security.network.client</key>
   <true/>
   <key>com.apple.security.files.user-selected.read-write</key>

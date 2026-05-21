@@ -9,6 +9,8 @@
 [![Platform](https://img.shields.io/badge/Platform-macOS%2013%2B-black?logo=apple)](https://www.apple.com/macos)
 [![Swift](https://img.shields.io/badge/Swift-5.9%2B-orange?logo=swift)](https://swift.org)
 [![CI](https://github.com/TNT-Likely/PanBar/actions/workflows/ci.yml/badge.svg)](https://github.com/TNT-Likely/PanBar/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/TNT-Likely/PanBar?color=brightgreen&logo=github)](https://github.com/TNT-Likely/PanBar/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/TNT-Likely/PanBar/total?color=blue&logo=github)](https://github.com/TNT-Likely/PanBar/releases)
 
 ![Preview](docs/screenshots/preview.png)
 
