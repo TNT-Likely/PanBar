@@ -23,7 +23,23 @@ private struct GeneralPaneContent: View {
     @State private var baseCurrency: Currency = .cny
     @State private var browserTemplate: String = BrowserURLBuilder.Template.xueqiu.rawValue
     @State private var hideOnScreenShare: Bool = true
-    @State private var language: LanguageManager.Choice = .auto
+
+    /// 语言:不走 @State,直接读写 storage,避免 .onAppear 触发 .onChange
+    private var languageBinding: Binding<LanguageManager.Choice> {
+        Binding(
+            get: {
+                let raw = container.settingsRepo.string(SettingsRepository.Keys.language) ?? "auto"
+                return LanguageManager.Choice(rawValue: raw) ?? .auto
+            },
+            set: { newValue in
+                try? container.settingsRepo.set(SettingsRepository.Keys.language, newValue.rawValue)
+                UserDefaults.standard.set(newValue.rawValue, forKey: "panbar.\(SettingsRepository.Keys.language)")
+                LanguageManager.applyOnLaunch(newValue)
+                UserDefaults.standard.synchronize()
+                LanguageManager.promptRestart()
+            }
+        )
+    }
 
     var body: some View {
         Form {
@@ -45,19 +61,10 @@ private struct GeneralPaneContent: View {
                     container.refresher.refreshNow()
                 }
 
-                Picker(L("settings.language", comment: ""), selection: $language) {
+                Picker(L("settings.language", comment: ""), selection: languageBinding) {
                     ForEach(LanguageManager.Choice.allCases) { c in
                         Text(c.displayName).tag(c)
                     }
-                }
-                .onChange(of: language) { value in
-                    try? container.settingsRepo.set(SettingsRepository.Keys.language, value.rawValue)
-                    UserDefaults.standard.set(value.rawValue, forKey: "panbar.\(SettingsRepository.Keys.language)")
-                    // 关键:必须现在就把 AppleLanguages 写进 UserDefaults。
-                    // 启动期再写就晚了(NSBundle 已经读过 preferredLocalizations)。
-                    LanguageManager.applyOnLaunch(value)
-                    UserDefaults.standard.synchronize()
-                    LanguageManager.promptRestart()
                 }
 
                 Picker(L("settings.theme", comment: ""), selection: $appearance.theme) {
@@ -98,8 +105,6 @@ private struct GeneralPaneContent: View {
             baseCurrency = container.settingsRepo.baseCurrency
             browserTemplate = container.settingsRepo.string(BrowserURLBuilder.templateKey) ?? BrowserURLBuilder.Template.xueqiu.rawValue
             hideOnScreenShare = container.settingsRepo.string(SettingsRepository.Keys.hideOnScreenShare) != "0"
-            let langRaw = container.settingsRepo.string(SettingsRepository.Keys.language) ?? "auto"
-            language = LanguageManager.Choice(rawValue: langRaw) ?? .auto
         }
     }
 }
