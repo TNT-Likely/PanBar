@@ -67,21 +67,18 @@ final class QuoteRefresher: ObservableObject {
         observeSystem()
     }
 
-    /// 应用启动早期(在 FX warmup 之后)调一次,异步合成一个"基于磁盘缓存"的 snapshot,
+    /// 应用启动早期(在 FX warmup 之后)调一次,**同步合成**一个"基于磁盘缓存"的 snapshot,
     /// 让 popover 第一次打开就有完整持仓 + 本位币换算。
     /// 缓存为空时也会跑一次:持仓行会用 costPrice 作 fallback,至少行能展示出来。
-    /// 不阻塞 caller。
-    func seedSnapshotFromCacheIfNeeded() {
+    ///
+    /// 必须在 `start()` 之前 await 完,否则首次 tick 会把 lastUpdated 占住,
+    /// 这边的 guard 直接跳过,首屏又变回空白。
+    func seedSnapshotFromCacheIfNeeded() async {
         let cached = quotes
-        Task { @MainActor [weak self] in
-            guard let self = self else { return }
-            let snap = await self.service.computeSnapshot(usingCachedQuotes: cached)
-            // 只在还没有任何 fresh 数据时才覆盖(避免和 tick 抢)
-            guard self.lastUpdated == nil else { return }
-            self.snapshot = snap
-            // 只有真的有缓存数据时才打 "cached" 旗,空缓存就显示正常 loading
-            if !cached.isEmpty { self.snapshotIsFromCache = true }
-        }
+        let snap = await service.computeSnapshot(usingCachedQuotes: cached)
+        guard lastUpdated == nil else { return }
+        snapshot = snap
+        if !cached.isEmpty { snapshotIsFromCache = true }
     }
 
     func setOffline(_ value: Bool) {

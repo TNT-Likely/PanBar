@@ -12,7 +12,7 @@ actor FXService {
     /// 自动刷新间隔(秒)。0 = 关闭自动刷新。
     /// `Int` 而非 `TimeInterval` 是为了让 settings 序列化简单 + UI Picker 用整数。
     static let intervalOff: Int = 0
-    static let defaultInterval: Int = 3600   // 1 小时
+    static let defaultInterval: Int = 86400   // 1 天(汇率变化很小,默认每天一次足够)
 
     private let provider: FXProvider
     private let cacheRepo: FXCacheRepository?
@@ -91,9 +91,13 @@ actor FXService {
     }
 
     /// 用户在设置页点「立即刷新」。
-    /// 不管 TTL,强制走网络;失败时 cache 不被清掉,继续用旧值。
-    func forceRefresh() async {
+    /// 不管 TTL,强制走网络;返回是否拿到了新值(false 表示请求挂了或空响应)。
+    /// 失败时 cache 不被清掉,继续用旧值。
+    @discardableResult
+    func forceRefresh() async -> Bool {
+        let before = lastFetch
         await refreshIfNeeded(force: true)
+        return lastFetch > before
     }
 
     /// 用户改了「自动刷新间隔」设置后调用。0 = 关。

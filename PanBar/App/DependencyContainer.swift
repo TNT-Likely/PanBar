@@ -91,13 +91,25 @@ final class DependencyContainer {
         return container
     }
 
+    /// 应用启动的"冷启动序列",必须严格按以下顺序跑:
+    ///   1. FXService.seedFromDisk()        ← 磁盘汇率灌进内存
+    ///   2. refresher.seedSnapshotFromCacheIfNeeded() ← 基于本地持仓+缓存行情合成首屏 snapshot
+    ///   3. refresher.start()                ← 启动 tick 循环(此时 lastUpdated 还没设)
+    ///   4. fx 网络拉新值(后台)+ 自动刷新 timer
+    /// 一旦顺序乱了,tick 先跑就会把 lastUpdated 写上,seed 的 guard 会跳过,
+    /// 用户首次打开 popover 还是空。
     func warmup() async {
-        // 用户配置的自动刷新间隔在 warmup 内传给 FXService,免去 actor 外部读 settings
         let interval = settingsRepo.fxRefreshInterval
         await fx.setAutoRefreshInterval(interval)
+
+        // 同步动作:磁盘 seed,必须先于 start() 完成
+        await fx.seedFromDisk()
+        await refresher.seedSnapshotFromCacheIfNeeded()
+
+        // 现在再启动 tick 循环
+        refresher.start()
+
+        // 后台拉新值
         await fx.warmup()
-        // FX 就绪后,把磁盘里 seed 的 quote 现成跑一次 computeSnapshot,
-        // 让 popover 第一次打开就有完整数据(包含本位币换算)
-        refresher.seedSnapshotFromCacheIfNeeded()
     }
 }

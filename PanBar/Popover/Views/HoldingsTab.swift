@@ -6,6 +6,12 @@ struct HoldingsTab: View {
     @EnvironmentObject var appearance: AppearancePreferences
     @EnvironmentObject var prefs: TickerPreferences
 
+    /// 把 snapshot.positions 按 holding.id 建索引,O(1) 查找。
+    /// snapshot 还没合成时(冷启动一瞬间)返回空,行会用 fallback 渲染。
+    private var positionsByID: [UUID: HoldingPosition] {
+        Dictionary(uniqueKeysWithValues: refresher.snapshot.positions.map { ($0.holding.id, $0) })
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
@@ -13,24 +19,27 @@ struct HoldingsTab: View {
                     if vm.holdings.isEmpty {
                         emptyState
                     } else {
-                        ForEach(refresher.snapshot.positions) { pos in
+                        // 列表来源是 vm.holdings(DB 同步可读),不依赖 snapshot 的合成进度。
+                        // 价格 / 盈亏 / 本位币换算从 snapshot 找,找不到就降级展示(只显示代码 + 成本)。
+                        ForEach(vm.holdings) { holding in
                             HoldingRow(
-                                position: pos,
+                                holding: holding,
+                                position: positionsByID[holding.id],
                                 density: appearance.density,
                                 scheme: prefs.colorScheme,
                                 baseCurrency: refresher.snapshot.baseCurrency
                             )
                                 .contextMenu {
                                     Button(L("action.openInBrowser", comment: "")) {
-                                        openInBrowser(pos.holding.symbol)
+                                        openInBrowser(holding.symbol)
                                     }
                                     Divider()
                                     Button(L("action.delete", comment: ""), role: .destructive) {
-                                        vm.deleteHolding(pos.holding.id)
+                                        vm.deleteHolding(holding.id)
                                     }
                                 }
                                 .onTapGesture(count: 2) {
-                                    openInBrowser(pos.holding.symbol)
+                                    openInBrowser(holding.symbol)
                                 }
                             Divider().opacity(0.4)
                         }
@@ -97,20 +106,21 @@ struct HoldingsTab: View {
 }
 
 private struct HoldingRow: View {
-    let position: HoldingPosition
+    let holding: Holding
+    /// snapshot 还没合成时为 nil,行降级为「只有代码 + 成本」的骨架。
+    let position: HoldingPosition?
     let density: PopoverDensity
     let scheme: TickerColorScheme
     let baseCurrency: Currency
 
     var body: some View {
-        let h = position.holding
-        let q = position.quote
+        let q = position?.quote
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    Text(displayCode(h.symbol))
+                    Text(displayCode(holding.symbol))
                         .font(.system(size: 13, weight: .semibold))
-                    Text(h.name)
+                    Text(holding.name)
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
@@ -123,23 +133,30 @@ private struct HoldingRow: View {
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {
                 HStack(spacing: 4) {
-                    Text(h.currency.format(q?.price ?? h.costPrice))
-                        .font(.system(size: 12, weight: .semibold))
-                        .monospacedDigit()
                     if let q = q {
+                        Text(holding.currency.format(q.price))
+                            .font(.system(size: 12, weight: .semibold))
+                            .monospacedDigit()
                         pctPill(q.changePct)
+                    } else {
+                        // 还没价格 —— 占位,避免行高跳动
+                        Text("—")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.secondary)
+                            .monospacedDigit()
                     }
                 }
-                Text(signedPnL(position.pnl, currency: h.currency))
-                    .font(.system(size: 11))
-                    .foregroundColor(pnlColor(position.pnl))
-                    .monospacedDigit()
-                // 本位币换算(原币种 != 本位币 时才显示)
-                if h.currency != baseCurrency, let basePnL = position.basePnL {
-                    Text("≈ " + signedPnL(basePnL, currency: baseCurrency))
-                        .font(.system(size: 10))
-                        .foregroundColor(pnlColor(position.pnl).opacity(0.7))
+                if let pos = position, q != nil {
+                    Text(signedPnL(pos.pnl, currency: holding.currency))
+                        .font(.system(size: 11))
+                        .foregroundColor(pnlColor(pos.pnl))
                         .monospacedDigit()
+                    if holding.currency != baseCurrency, let basePnL = pos.basePnL {
+                        Text("≈ " + signedPnL(basePnL, currency: baseCurrency))
+                            .font(.system(size: 10))
+                            .foregroundColor(pnlColor(pos.pnl).opacity(0.7))
+                            .monospacedDigit()
+                    }
                 }
             }
         }
@@ -152,8 +169,8 @@ private struct HoldingRow: View {
     }
 
     private var detailText: String {
-        let qtyDisplay = "\(position.holding.quantity)"
-        let costDisplay = position.holding.currency.format(position.holding.costPrice)
+        let qtyDisplay = "\(holding.quantity)"
+        let costDisplay = holding.currency.format(holding.costPrice)
         return String(format: L("holding.detail", comment: ""), qtyDisplay, costDisplay)
     }
 

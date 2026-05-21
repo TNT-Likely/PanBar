@@ -76,7 +76,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 container?.finnhub.setApiKey(key)
             }
 
-            container.refresher.start()
+            // 注意:不在这里直接 refresher.start() —— warmup() 内部按
+            // (磁盘 seed → 合成 snapshot → start tick → 网络) 的固定顺序跑,
+            // 避免 tick 先于 seed 把 lastUpdated 占住,导致首屏空。
 
             // 通知权限
             NotificationService.shared.requestAuthorizationIfNeeded()
@@ -89,7 +91,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
             Task {
                 await container.warmup()
-                container.refresher.refreshNow()
             }
 
             // 首启 onboarding

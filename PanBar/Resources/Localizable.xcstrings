@@ -1052,6 +1052,18 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "立即刷新" } }
       }
     },
+    "fx.refresh.success" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Updated %d rates" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已更新 %d 对汇率" } }
+      }
+    },
+    "fx.refresh.failed" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Refresh failed — check network or data source" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "刷新失败 — 检查网络或数据源" } }
+      }
+    },
     "fx.neverFetched" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Never fetched" } },

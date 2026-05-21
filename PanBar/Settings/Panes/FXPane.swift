@@ -54,8 +54,14 @@ private struct FXPaneContent: View {
     @State private var rows: [FXRow] = []
     @State private var lastFetch: Date? = nil
     @State private var isRefreshing: Bool = false
-    @State private var refreshChoice: FXRefreshChoice = .oneHour
+    @State private var refreshChoice: FXRefreshChoice = .oneDay
     @State private var tickTrigger: Date = Date()
+    @State private var refreshMessage: RefreshMessage? = nil
+
+    private enum RefreshMessage: Equatable {
+        case success(Int)   // 更新了几对
+        case failed         // 网络挂了或空响应
+    }
 
     private let refreshTicker = Timer.publish(every: 5, on: .main, in: .common).autoconnect()
 
@@ -90,6 +96,20 @@ private struct FXPaneContent: View {
                     Text(lastFetchText)
                         .font(.caption)
                         .foregroundColor(.secondary)
+                }
+                if let msg = refreshMessage {
+                    HStack(spacing: 6) {
+                        switch msg {
+                        case .success(let n):
+                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+                            Text(String(format: L("fx.refresh.success", comment: ""), n))
+                        case .failed:
+                            Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.orange)
+                            Text(L("fx.refresh.failed", comment: ""))
+                        }
+                    }
+                    .font(.caption)
+                    .transition(.opacity)
                 }
             }
 
@@ -141,13 +161,19 @@ private struct FXPaneContent: View {
 
     private func refresh() {
         isRefreshing = true
+        refreshMessage = nil
         Task {
-            await container.fx.forceRefresh()
+            let ok = await container.fx.forceRefresh()
             await reloadSnapshot()
-            // 顺手让 popover 重新换算
             await MainActor.run {
                 isRefreshing = false
-                container.refresher.refreshNow()
+                refreshMessage = ok ? .success(rows.count) : .failed
+                if ok { container.refresher.refreshNow() }
+            }
+            // 3 秒后自动隐藏提示
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            await MainActor.run {
+                if refreshMessage != nil { refreshMessage = nil }
             }
         }
     }
