@@ -38,7 +38,7 @@ final class BackupService {
         let watchlist = (try? container.watchlistRepo.all()) ?? []
         let alerts = (try? container.alertsRepo.all()) ?? []
         let settings = (try? container.settingsRepo.allEntries()) ?? [:]
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+        let version = AppVersion.short
         return BackupBundle(
             schemaVersion: BackupBundle.currentSchemaVersion,
             exportedAt: Date(),

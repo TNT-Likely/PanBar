@@ -42,8 +42,8 @@ targets:
       properties:
         LSUIElement: true
         LSApplicationCategoryType: public.app-category.finance
-        CFBundleShortVersionString: "0.1.0"
-        CFBundleVersion: "1"
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleDisplayName: PanBar
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
@@ -60,6 +60,9 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: app.panbar.PanBar
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_PREVIEWS: YES
+        # 默认版本号。CI 通过 `xcodebuild MARKETING_VERSION=x.y.z CURRENT_PROJECT_VERSION=NNN` 覆盖。
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
       configs:
         Debug:
           # Debug 走无沙盒 entitlements,Sparkle 不需要 Hardened Runtime 也能加载 XPC

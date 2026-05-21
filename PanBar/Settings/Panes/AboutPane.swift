@@ -13,7 +13,7 @@ struct AboutPane: View {
             }
             VStack(spacing: 4) {
                 Text("PanBar").font(.system(size: 22, weight: .bold))
-                Text("v0.1.0").foregroundColor(.secondary).font(.system(size: 12))
+                Text(AppVersion.displayShort).foregroundColor(.secondary).font(.system(size: 12))
             }
             Text(L("about.tagline", comment: ""))
                 .multilineTextAlignment(.center)

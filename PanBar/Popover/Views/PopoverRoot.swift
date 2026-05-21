@@ -110,7 +110,7 @@ struct PopoverRoot: View {
             .foregroundColor(.secondary)
 
             Spacer()
-            Text("v0.1.0")
+            Text(AppVersion.displayShort)
                 .font(.system(size: 10))
                 .foregroundColor(.secondary.opacity(0.7))
             Button(action: { NSApp.terminate(nil) }) {
