@@ -189,8 +189,11 @@ struct PopoverRoot: View {
 
             Spacer()
             Button(action: openGitHub) {
-                Image(systemName: "chevron.left.forwardslash.chevron.right")
-                    .font(.system(size: 12))
+                Image("GitHubMark")
+                    .renderingMode(.template)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: 14, height: 14)
                     .foregroundColor(.secondary)
             }
             .buttonStyle(.plain)
