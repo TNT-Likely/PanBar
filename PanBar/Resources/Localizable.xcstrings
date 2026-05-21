@@ -704,6 +704,72 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "稍后" } }
       }
     },
+    "loading" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "加载中…" } }
+      }
+    },
+    "action.ok" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OK" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "好" } }
+      }
+    },
+    "alerts.testNotification" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Test" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "测试通知" } }
+      }
+    },
+    "notification.test.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "PanBar test notification" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "PanBar 测试通知" } }
+      }
+    },
+    "notification.test.body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "If you see this, alerts will work. If not, check System Settings → Notifications." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "看到这条说明预警会正常推送。看不到请去 系统设置 → 通知 检查 PanBar 是否被允许。" } }
+      }
+    },
+    "notification.fallbackHint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "(Shown as a fallback dialog because system notifications are disabled for PanBar.)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "(系统通知被禁用,所以这里用对话框兜底)" } }
+      }
+    },
+    "notification.openSettings" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open System Settings" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "打开系统设置" } }
+      }
+    },
+    "alerts.permission.denied.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Notifications are blocked" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "通知已被系统禁止" } }
+      }
+    },
+    "alerts.permission.denied.body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "PanBar can't push alerts. Re-enable notifications in System Settings → Notifications → PanBar. As a fallback, alerts will surface as a dialog." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "PanBar 无法推送预警通知。请到 系统设置 → 通知 → PanBar 中重新开启。无法推送时会用对话框兜底。" } }
+      }
+    },
+    "alerts.permission.notDetermined" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Notification permission not granted yet." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "尚未授权 PanBar 发送通知。" } }
+      }
+    },
+    "alerts.permission.request" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Request" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请求授权" } }
+      }
+    },
     "action.importCSV" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Import CSV" } },

@@ -10,7 +10,7 @@ struct GeneralPane: View {
                 appearance: container.appearancePrefs
             )
         } else {
-            Text("Loading…")
+            Text(L("loading", comment: ""))
         }
     }
 }

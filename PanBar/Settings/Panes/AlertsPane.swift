@@ -12,10 +12,16 @@ struct AlertsPane: View {
                 Text(L("settings.alerts", comment: ""))
                     .font(.title3)
                 Spacer()
+                Button(action: testNotification) {
+                    Label(L("alerts.testNotification", comment: ""), systemImage: "bell.badge")
+                }
                 Button(action: { showAdd = true }) {
                     Label(L("action.add", comment: ""), systemImage: "plus")
                 }
             }
+
+            // 权限状态提示
+            permissionBanner
 
             Table(alerts) {
                 TableColumn(L("col.symbol", comment: "")) { (a: Alert) in
@@ -80,6 +86,53 @@ struct AlertsPane: View {
 
     private func reload() {
         alerts = (try? container?.alertsRepo.all()) ?? []
+    }
+
+    private func testNotification() {
+        NotificationService.shared.sendTest()
+    }
+
+    @ViewBuilder
+    private var permissionBanner: some View {
+        let status = NotificationService.shared.authorizationStatus
+        if status == .denied {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.orange)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L("alerts.permission.denied.title", comment: ""))
+                        .font(.system(size: 12, weight: .semibold))
+                    Text(L("alerts.permission.denied.body", comment: ""))
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                    Button(L("notification.openSettings", comment: "")) {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.notifications") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                    .controlSize(.small)
+                }
+            }
+            .padding(10)
+            .background(Color.orange.opacity(0.10))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+        } else if status == .notDetermined {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "info.circle.fill")
+                    .foregroundColor(.accentColor)
+                Text(L("alerts.permission.notDetermined", comment: ""))
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                Spacer()
+                Button(L("alerts.permission.request", comment: "")) {
+                    NotificationService.shared.requestAuthorizationIfNeeded()
+                }
+                .controlSize(.small)
+            }
+            .padding(10)
+            .background(Color.accentColor.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
     }
 
     private func thresholdText(_ a: Alert) -> String {

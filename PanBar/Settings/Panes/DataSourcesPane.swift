@@ -7,7 +7,7 @@ struct DataSourcesPane: View {
         if let prefs = container?.dataSourcePrefs {
             DataSourcesPaneContent(prefs: prefs)
         } else {
-            Text("Loading…")
+            Text(L("loading", comment: ""))
         }
     }
 }

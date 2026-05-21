@@ -7,7 +7,7 @@ struct TickerPane: View {
         if let container = container {
             TickerPaneContent(container: container, prefs: container.tickerPrefs)
         } else {
-            Text("Loading…")
+            Text(L("loading", comment: ""))
         }
     }
 }
