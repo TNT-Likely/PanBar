@@ -23,6 +23,7 @@ private struct GeneralPaneContent: View {
     @State private var baseCurrency: Currency = .cny
     @State private var browserTemplate: String = BrowserURLBuilder.Template.xueqiu.rawValue
     @State private var hideOnScreenShare: Bool = true
+    @State private var language: LanguageManager.Choice = .auto
 
     var body: some View {
         Form {
@@ -42,6 +43,18 @@ private struct GeneralPaneContent: View {
                 .onChange(of: baseCurrency) { value in
                     try? container.settingsRepo.setBaseCurrency(value)
                     container.refresher.refreshNow()
+                }
+
+                Picker(L("settings.language", comment: ""), selection: $language) {
+                    ForEach(LanguageManager.Choice.allCases) { c in
+                        Text(c.displayName).tag(c)
+                    }
+                }
+                .onChange(of: language) { value in
+                    // 同时落到 SQLite settings + UserDefaults(启动期会读后者)
+                    try? container.settingsRepo.set(SettingsRepository.Keys.language, value.rawValue)
+                    UserDefaults.standard.set(value.rawValue, forKey: "panbar.\(SettingsRepository.Keys.language)")
+                    LanguageManager.promptRestart()
                 }
 
                 Picker(L("settings.theme", comment: ""), selection: $appearance.theme) {
@@ -82,6 +95,8 @@ private struct GeneralPaneContent: View {
             baseCurrency = container.settingsRepo.baseCurrency
             browserTemplate = container.settingsRepo.string(BrowserURLBuilder.templateKey) ?? BrowserURLBuilder.Template.xueqiu.rawValue
             hideOnScreenShare = container.settingsRepo.string(SettingsRepository.Keys.hideOnScreenShare) != "0"
+            let langRaw = container.settingsRepo.string(SettingsRepository.Keys.language) ?? "auto"
+            language = LanguageManager.Choice(rawValue: langRaw) ?? .auto
         }
     }
 }

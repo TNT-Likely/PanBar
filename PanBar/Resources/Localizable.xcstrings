@@ -668,6 +668,42 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "滚动条 · 自选" } }
       }
     },
+    "settings.language" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Language" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "语言" } }
+      }
+    },
+    "language.auto" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Follow System" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "跟随系统" } }
+      }
+    },
+    "language.restart.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Restart required" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "需要重启 PanBar" } }
+      }
+    },
+    "language.restart.body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Language changes take effect after relaunching the app. Relaunch now?" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "语言切换需要重启 PanBar 才能完整生效。是否现在重启?" } }
+      }
+    },
+    "language.restart.now" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Relaunch Now" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "立即重启" } }
+      }
+    },
+    "action.later" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Later" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "稍后" } }
+      }
+    },
     "action.importCSV" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Import CSV" } },

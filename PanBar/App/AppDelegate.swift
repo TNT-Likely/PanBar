@@ -6,6 +6,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusController: StatusItemController?
     private var popoverController: PopoverController?
 
+    private func applyLanguageOverride() {
+        // 这里直连 UserDefaults,不走 DependencyContainer(因为容器还没建)
+        // 自己读 raw app_language 键(SettingsRepository 用同一个 key)
+        // 但 SettingsRepository 是 SQLite 的,这里没法读 — 改成同时往 UserDefaults 也写一份。
+        let key = SettingsRepository.Keys.language
+        let raw = UserDefaults.standard.string(forKey: "panbar.\(key)") ?? "auto"
+        let choice = LanguageManager.Choice(rawValue: raw) ?? .auto
+        LanguageManager.applyOnLaunch(choice)
+    }
+
     private func registerGlobalHotkeyIfEnabled(container: DependencyContainer) {
         let enabled = (container.settingsRepo.string(SettingsRepository.Keys.globalHotkeyEnabled) ?? "1") == "1"
         guard enabled else { return }
@@ -15,6 +25,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 语言覆盖必须在容器构建前生效,容器里就会触发 L() 加载本地化串
+        applyLanguageOverride()
+
         do {
             let container = try DependencyContainer.bootstrap()
             self.container = container
