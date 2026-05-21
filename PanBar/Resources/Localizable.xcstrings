@@ -680,6 +680,78 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重置为默认" } }
       }
     },
+    "settings.backupSection" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Backup & Restore" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "备份与恢复" } }
+      }
+    },
+    "settings.backup.hint" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Exports everything (holdings / watchlist / alerts / settings / hotkeys / data sources / Finnhub key) to a single JSON file. Importing REPLACES all current data after confirmation." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出包含所有持仓 / 自选 / 预警 / 设置(语言 / 主题 / 配色 / 快捷键 / 数据源优先级 / Finnhub Key 等)为一个 JSON 文件。导入会先二次确认,然后整体覆盖当前数据。" } }
+      }
+    },
+    "backup.exportAll" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export All" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出全部" } }
+      }
+    },
+    "backup.importAll" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入…" } }
+      }
+    },
+    "backup.exportTitle" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export PanBar backup" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出 PanBar 备份" } }
+      }
+    },
+    "backup.importTitle" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import PanBar backup" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入 PanBar 备份" } }
+      }
+    },
+    "backup.confirmReplace.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Replace current data?" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "替换当前所有数据?" } }
+      }
+    },
+    "backup.confirmReplace.body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The backup contains %d holdings, %d watchlist items, %d alerts and %d settings. All current data will be wiped and replaced." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "备份文件包含 %d 条持仓、%d 条自选、%d 条预警、%d 项设置。当前数据将被完全清空并替换。" } }
+      }
+    },
+    "backup.confirmReplace.yes" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Replace All" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "替换" } }
+      }
+    },
+    "backup.imported.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import complete" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入完成" } }
+      }
+    },
+    "backup.imported.body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Restored %d holdings, %d watchlist items, %d alerts, %d settings." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已恢复 %d 条持仓、%d 条自选、%d 条预警、%d 项设置。" } }
+      }
+    },
+    "backup.error.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Backup operation failed" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "备份操作失败" } }
+      }
+    },
     "menu.privacy.show" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Show ticker" } },

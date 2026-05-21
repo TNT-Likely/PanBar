@@ -59,6 +59,12 @@ struct WatchlistRepository {
         }
     }
 
+    func deleteAll() throws {
+        _ = try dbPool.write { db in
+            try WatchRecord.deleteAll(db)
+        }
+    }
+
     func observeAll() -> AsyncStream<[WatchItem]> {
         AsyncStream { continuation in
             let observation = ValueObservation.tracking { db -> [WatchItem] in

@@ -23,6 +23,25 @@ struct SettingsRepository {
         }
     }
 
+    /// 导出/备份用:返回所有 key-value。
+    func allEntries() throws -> [String: String] {
+        try dbPool.read { db in
+            try SettingRecord.fetchAll(db).reduce(into: [String: String]()) { acc, r in
+                acc[r.key] = r.value
+            }
+        }
+    }
+
+    /// 批量写入(导入用)。
+    func replaceAll(_ entries: [String: String]) throws {
+        try dbPool.write { db in
+            try db.execute(sql: "DELETE FROM appSetting")
+            for (k, v) in entries {
+                try SettingRecord(key: k, value: v).insert(db)
+            }
+        }
+    }
+
     // MARK: 类型化访问器
 
     enum Keys {

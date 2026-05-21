@@ -107,6 +107,33 @@ private struct GeneralPaneContent: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
+
+            Section(header: Text(L("settings.backupSection", comment: "")).font(.headline)) {
+                HStack {
+                    Button {
+                        BackupService(container: container).presentExportPanel()
+                    } label: {
+                        Label(L("backup.exportAll", comment: ""), systemImage: "square.and.arrow.up")
+                    }
+                    Button {
+                        let svc = BackupService(container: container)
+                        svc.presentImportPanel { summary in
+                            // 重新 register hotkey,因为 settings 全替换了
+                            if let delegate = NSApp.delegate as? AppDelegate {
+                                delegate.applyHotkeys(container: container)
+                            }
+                            container.refresher.refreshNow()
+                            showImportDoneAlert(summary)
+                        }
+                    } label: {
+                        Label(L("backup.importAll", comment: ""), systemImage: "square.and.arrow.down")
+                    }
+                    Spacer()
+                }
+                Text(L("settings.backup.hint", comment: ""))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
         .formStyle(.grouped)
         .padding(20)
@@ -116,6 +143,19 @@ private struct GeneralPaneContent: View {
             hideOnScreenShare = container.settingsRepo.string(SettingsRepository.Keys.hideOnScreenShare) != "0"
         }
     }
+}
+
+@MainActor
+private func showImportDoneAlert(_ summary: ImportSummary) {
+    let alert = NSAlert()
+    alert.messageText = L("backup.imported.title", comment: "")
+    alert.informativeText = String(
+        format: L("backup.imported.body", comment: ""),
+        summary.holdingsCount, summary.watchlistCount, summary.alertsCount, summary.settingsCount
+    )
+    alert.alertStyle = .informational
+    alert.addButton(withTitle: L("action.ok", comment: ""))
+    alert.runModal()
 }
 
 /// 单行快捷键编辑器:左侧标签 + 中间录入器 + 右侧"重置默认"按钮。

@@ -102,6 +102,12 @@ struct AlertsRepository {
         }
     }
 
+    func deleteAll() throws {
+        _ = try dbPool.write { db in
+            try AlertRecord.deleteAll(db)
+        }
+    }
+
     /// 标记触发:更新 lastTriggeredAt + 累加当天计数。
     func markTriggered(id: UUID, at date: Date, todayKey: String) throws {
         try dbPool.write { db in

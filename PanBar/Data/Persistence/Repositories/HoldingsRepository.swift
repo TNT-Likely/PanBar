@@ -74,6 +74,12 @@ struct HoldingsRepository {
         }
     }
 
+    func deleteAll() throws {
+        _ = try dbPool.write { db in
+            try HoldingRecord.deleteAll(db)
+        }
+    }
+
     /// 提供给 SwiftUI 的 Combine-style 监听(简化版,改为 ObservableObject 自己 poll)。
     func observeAll() -> AsyncStream<[Holding]> {
         AsyncStream { continuation in
