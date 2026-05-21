@@ -108,9 +108,28 @@ final class BackupService {
                 let bundle = try makeBundle()
                 let data = try encode(bundle)
                 try data.write(to: url)
+                showExportDoneAlert(bundle: bundle, fileURL: url)
             } catch {
                 showError(error)
             }
+        }
+    }
+
+    private func showExportDoneAlert(bundle: BackupBundle, fileURL: URL) {
+        let alert = NSAlert()
+        alert.messageText = L("backup.exported.title", comment: "")
+        alert.informativeText = String(
+            format: L("backup.exported.body", comment: ""),
+            bundle.holdings.count,
+            bundle.watchlist.count,
+            bundle.alerts.count,
+            bundle.settings.count
+        ) + "\n\n" + fileURL.path
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: L("action.ok", comment: ""))
+        alert.addButton(withTitle: L("backup.revealInFinder", comment: ""))
+        if alert.runModal() == .alertSecondButtonReturn {
+            NSWorkspace.shared.activateFileViewerSelecting([fileURL])
         }
     }
 

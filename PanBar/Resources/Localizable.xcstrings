@@ -752,6 +752,24 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "备份操作失败" } }
       }
     },
+    "backup.exported.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export complete" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出完成" } }
+      }
+    },
+    "backup.exported.body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Exported %d holdings, %d watchlist items, %d alerts and %d settings." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已导出 %d 条持仓、%d 条自选、%d 条预警、%d 项设置。" } }
+      }
+    },
+    "backup.revealInFinder" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show in Finder" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在访达中显示" } }
+      }
+    },
     "menu.privacy.show" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Show ticker" } },
