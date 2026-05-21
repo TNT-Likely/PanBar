@@ -242,6 +242,54 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "总" } }
       }
     },
+    "update.available.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Update available — %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "有新版本可用 — %@" } }
+      }
+    },
+    "update.available.body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Current: %@\nLatest: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "当前版本:%@\n最新版本:%@" } }
+      }
+    },
+    "update.action.download" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Download" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "去下载" } }
+      }
+    },
+    "update.action.later" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Later" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "稍后" } }
+      }
+    },
+    "update.uptodate.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Already up to date" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已是最新版本" } }
+      }
+    },
+    "update.uptodate.body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "You're on PanBar %@, the latest available." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "当前 PanBar %@ 已经是最新版。" } }
+      }
+    },
+    "update.error.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Update check failed" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "检查更新失败" } }
+      }
+    },
+    "update.error.body" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Could not reach GitHub. Check your network and try again." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法连接 GitHub,请检查网络后重试。" } }
+      }
+    },
     "settings.markets" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Markets" } },
