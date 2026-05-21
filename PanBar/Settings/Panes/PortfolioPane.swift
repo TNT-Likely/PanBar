@@ -112,7 +112,7 @@ struct PortfolioPane: View {
                 }
                 .onMove(perform: move)
             }
-            .listStyle(.bordered(alternatesRowBackgrounds: true))
+            .listStyle(.inset(alternatesRowBackgrounds: true))
         }
     }
 
