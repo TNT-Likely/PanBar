@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AlertsPane: View {
     @Environment(\.container) private var container
+    @ObservedObject private var notificationService = NotificationService.shared
     @State private var alerts: [Alert] = []
     @State private var showAdd: Bool = false
     @State private var editing: Alert?
@@ -127,7 +128,7 @@ struct AlertsPane: View {
 
     @ViewBuilder
     private var permissionBanner: some View {
-        let status = NotificationService.shared.authorizationStatus
+        let status = notificationService.authorizationStatus
         if status == .denied {
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "exclamationmark.triangle.fill")

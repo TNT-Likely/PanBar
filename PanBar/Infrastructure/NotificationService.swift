@@ -5,16 +5,30 @@ import AppKit
 /// 极简通知封装。第一次启动时申请权限,后续按需发送。
 /// 对开发期 ad-hoc 签名的 app,如果系统不接受通知,会回退到一个简单的 NSAlert,确保用户看到。
 @MainActor
-final class NotificationService: NSObject {
+final class NotificationService: NSObject, ObservableObject {
     static let shared = NotificationService()
     private let center = UNUserNotificationCenter.current()
     private var requested = false
-    private(set) var authorizationStatus: UNAuthorizationStatus = .notDetermined
+    /// @Published 之后 AlertsPane 用 @ObservedObject 订阅,系统设置里改完权限
+    /// 切回 app 立刻看到 banner 消失。
+    @Published private(set) var authorizationStatus: UNAuthorizationStatus = .notDetermined
 
     private override init() {
         super.init()
         center.delegate = self
         refreshAuthorizationStatus()
+
+        // 用户去系统设置开/关权限后切回来,自动重查一次
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppDidBecomeActive),
+            name: NSApplication.didBecomeActiveNotification,
+            object: nil
+        )
+    }
+
+    @objc private nonisolated func handleAppDidBecomeActive() {
+        Task { @MainActor in self.refreshAuthorizationStatus() }
     }
 
     func requestAuthorizationIfNeeded() {
