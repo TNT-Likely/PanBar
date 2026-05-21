@@ -91,6 +91,19 @@ enum Migrations {
             }
         }
 
+        // 持仓加 sortOrder 列(自选已经有 order),用户可拖拽改顺序
+        migrator.registerMigration("v6_holding_sort_order") { db in
+            try db.alter(table: "holding") { t in
+                t.add(column: "sortOrder", .integer).notNull().defaults(to: 0)
+            }
+            // 初始化:按 createdAt 升序给 sortOrder 0,1,2...,这样老用户拖前的默认顺序
+            // 跟之前看到的一致,不会一更新就乱
+            let ids = try String.fetchAll(db, sql: "SELECT id FROM holding ORDER BY createdAt ASC")
+            for (i, id) in ids.enumerated() {
+                try db.execute(sql: "UPDATE holding SET sortOrder = ? WHERE id = ?", arguments: [i, id])
+            }
+        }
+
         try migrator.migrate(dbPool)
     }
 }

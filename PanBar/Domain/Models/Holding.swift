@@ -9,6 +9,7 @@ struct Holding: Equatable, Codable, Sendable, Identifiable {
     var currency: Currency
     var note: String?
     var inTicker: Bool
+    var sortOrder: Int
     var createdAt: Date
 
     init(
@@ -20,6 +21,7 @@ struct Holding: Equatable, Codable, Sendable, Identifiable {
         currency: Currency? = nil,
         note: String? = nil,
         inTicker: Bool = true,
+        sortOrder: Int = 0,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -30,6 +32,7 @@ struct Holding: Equatable, Codable, Sendable, Identifiable {
         self.currency = currency ?? symbol.market.defaultCurrency
         self.note = note
         self.inTicker = inTicker
+        self.sortOrder = sortOrder
         self.createdAt = createdAt
     }
 }

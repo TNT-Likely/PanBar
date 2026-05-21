@@ -24,54 +24,7 @@ struct WatchlistPane: View {
                     Label(L("action.add", comment: ""), systemImage: "plus")
                 }
             }
-            Table(items, selection: $selection) {
-                TableColumn(L("col.symbol", comment: "")) { (w: WatchItem) in
-                    Text(w.symbol.market == .us ? w.symbol.code.uppercased() : w.symbol.code)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) { editing = w }
-                }
-                TableColumn(L("col.name", comment: "")) { (w: WatchItem) in
-                    Text(w.name)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) { editing = w }
-                }
-                TableColumn(L("col.market", comment: "")) { (w: WatchItem) in
-                    Text(w.symbol.market.displayName)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) { editing = w }
-                }
-                TableColumn(L("col.inTicker", comment: "")) { (w: WatchItem) in
-                    Toggle("", isOn: Binding(
-                        get: { w.inTicker },
-                        set: { newValue in
-                            var copy = w
-                            copy.inTicker = newValue
-                            try? container?.watchlistRepo.upsert(copy)
-                            reload()
-                            container?.refresher.refreshNow()
-                        }
-                    ))
-                    .labelsHidden()
-                    .help(L("col.inTicker.help", comment: ""))
-                }
-                TableColumn("") { (w: WatchItem) in
-                    HStack(spacing: 4) {
-                        Button { editing = w } label: {
-                            Image(systemName: "pencil")
-                        }
-                        .buttonStyle(.borderless)
-                        .help(L("action.edit", comment: ""))
-                        Button(role: .destructive) {
-                            try? container?.watchlistRepo.delete(id: w.id)
-                            reload()
-                            container?.refresher.refreshNow()
-                        } label: {
-                            Image(systemName: "trash")
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                }
-            }
+            watchlistList
             if items.isEmpty {
                 Text(L("watchlist.empty", comment: ""))
                     .foregroundColor(.secondary)
@@ -105,6 +58,83 @@ struct WatchlistPane: View {
 
     private func reload() {
         items = (try? container?.watchlistRepo.all()) ?? []
+    }
+
+    /// 同 PortfolioPane:用 List 替代 Table 拿 .onMove 拖拽改顺序;伪表头对齐列宽。
+    private var watchlistList: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Text(L("col.symbol", comment: "")).frame(width: 80, alignment: .leading)
+                Text(L("col.name", comment: "")).frame(maxWidth: .infinity, alignment: .leading)
+                Text(L("col.market", comment: "")).frame(width: 60, alignment: .leading)
+                Text(L("col.inTicker", comment: "")).frame(width: 50, alignment: .center)
+                Spacer().frame(width: 60)
+            }
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundColor(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+
+            List {
+                ForEach(items) { w in
+                    watchRow(w)
+                }
+                .onMove(perform: move)
+            }
+            .listStyle(.bordered(alternatesRowBackgrounds: true))
+        }
+    }
+
+    @ViewBuilder
+    private func watchRow(_ w: WatchItem) -> some View {
+        HStack(spacing: 8) {
+            Text(w.symbol.market == .us ? w.symbol.code.uppercased() : w.symbol.code)
+                .frame(width: 80, alignment: .leading)
+            Text(w.name)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(w.symbol.market.displayName)
+                .frame(width: 60, alignment: .leading)
+                .foregroundColor(.secondary)
+            Toggle("", isOn: Binding(
+                get: { w.inTicker },
+                set: { newValue in
+                    var copy = w
+                    copy.inTicker = newValue
+                    try? container?.watchlistRepo.upsert(copy)
+                    reload()
+                    container?.refresher.refreshNow()
+                }
+            ))
+            .labelsHidden()
+            .help(L("col.inTicker.help", comment: ""))
+            .frame(width: 50, alignment: .center)
+            HStack(spacing: 4) {
+                Button { editing = w } label: {
+                    Image(systemName: "pencil")
+                }
+                .buttonStyle(.borderless)
+                .help(L("action.edit", comment: ""))
+                Button(role: .destructive) {
+                    try? container?.watchlistRepo.delete(id: w.id)
+                    reload()
+                    container?.refresher.refreshNow()
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.borderless)
+            }
+            .frame(width: 60)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { editing = w }
+    }
+
+    private func move(from source: IndexSet, to destination: Int) {
+        items.move(fromOffsets: source, toOffset: destination)
+        let ids = items.map { $0.id }
+        try? container?.watchlistRepo.reorder(ids: ids)
+        container?.refresher.refreshNow()
     }
 
     private func exportCSV() {

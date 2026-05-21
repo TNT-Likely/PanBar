@@ -14,6 +14,7 @@ private struct HoldingRecord: Codable, FetchableRecord, PersistableRecord {
     var currency: String
     var note: String?
     var inTicker: Bool
+    var sortOrder: Int
     var createdAt: Date
 
     func toDomain() -> Holding? {
@@ -31,6 +32,7 @@ private struct HoldingRecord: Codable, FetchableRecord, PersistableRecord {
             currency: currency,
             note: note,
             inTicker: inTicker,
+            sortOrder: sortOrder,
             createdAt: createdAt
         )
     }
@@ -46,6 +48,7 @@ private struct HoldingRecord: Codable, FetchableRecord, PersistableRecord {
             currency: h.currency.rawValue,
             note: h.note,
             inTicker: h.inTicker,
+            sortOrder: h.sortOrder,
             createdAt: h.createdAt
         )
     }
@@ -56,8 +59,9 @@ struct HoldingsRepository {
 
     func all() throws -> [Holding] {
         try dbPool.read { db in
+            // sortOrder 优先,相同 order(没拖过)再按 createdAt 升序兜底
             try HoldingRecord
-                .order(Column("createdAt").asc)
+                .order(Column("sortOrder").asc, Column("createdAt").asc)
                 .fetchAll(db)
         }.compactMap { $0.toDomain() }
     }
@@ -80,11 +84,26 @@ struct HoldingsRepository {
         }
     }
 
+    /// 用户拖拽改顺序后,把当前完整 id 序列 → 各自 sortOrder = 数组下标。
+    /// 一次性 batch 写,避免 N 次写盘。
+    func reorder(ids: [UUID]) throws {
+        try dbPool.write { db in
+            for (i, id) in ids.enumerated() {
+                try db.execute(
+                    sql: "UPDATE holding SET sortOrder = ? WHERE id = ?",
+                    arguments: [i, id.uuidString]
+                )
+            }
+        }
+    }
+
     /// 提供给 SwiftUI 的 Combine-style 监听(简化版,改为 ObservableObject 自己 poll)。
     func observeAll() -> AsyncStream<[Holding]> {
         AsyncStream { continuation in
             let observation = ValueObservation.tracking { db -> [Holding] in
-                try HoldingRecord.order(Column("createdAt").asc).fetchAll(db).compactMap { $0.toDomain() }
+                try HoldingRecord
+                    .order(Column("sortOrder").asc, Column("createdAt").asc)
+                    .fetchAll(db).compactMap { $0.toDomain() }
             }
             let cancellable = observation.start(in: dbPool, onError: { _ in }) { holdings in
                 continuation.yield(holdings)

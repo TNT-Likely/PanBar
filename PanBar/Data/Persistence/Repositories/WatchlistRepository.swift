@@ -65,6 +65,18 @@ struct WatchlistRepository {
         }
     }
 
+    /// 用户拖拽改顺序后,把当前完整 id 序列 → 各自 order = 数组下标。
+    func reorder(ids: [UUID]) throws {
+        try dbPool.write { db in
+            for (i, id) in ids.enumerated() {
+                try db.execute(
+                    sql: "UPDATE watchItem SET \"order\" = ? WHERE id = ?",
+                    arguments: [i, id.uuidString]
+                )
+            }
+        }
+    }
+
     func observeAll() -> AsyncStream<[WatchItem]> {
         AsyncStream { continuation in
             let observation = ValueObservation.tracking { db -> [WatchItem] in

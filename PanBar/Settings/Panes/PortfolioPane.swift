@@ -25,65 +25,7 @@ struct PortfolioPane: View {
                 }
             }
 
-            Table(holdings, selection: $selection) {
-                TableColumn(L("col.symbol", comment: "")) { (h: Holding) in
-                    Text(h.symbol.market == .us ? h.symbol.code.uppercased() : h.symbol.code)
-                        .monospacedDigit()
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) { editing = h }
-                }
-                TableColumn(L("col.name", comment: "")) { (h: Holding) in
-                    Text(h.name)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) { editing = h }
-                }
-                TableColumn(L("col.market", comment: "")) { (h: Holding) in
-                    Text(h.symbol.market.displayName)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) { editing = h }
-                }
-                TableColumn(L("col.qty", comment: "")) { (h: Holding) in
-                    Text("\(h.quantity)").monospacedDigit()
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) { editing = h }
-                }
-                TableColumn(L("col.cost", comment: "")) { (h: Holding) in
-                    Text(h.currency.format(h.costPrice)).monospacedDigit()
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) { editing = h }
-                }
-                TableColumn(L("col.inTicker", comment: "")) { (h: Holding) in
-                    Toggle("", isOn: Binding(
-                        get: { h.inTicker },
-                        set: { newValue in
-                            var copy = h
-                            copy.inTicker = newValue
-                            try? container?.holdingsRepo.upsert(copy)
-                            reload()
-                            container?.refresher.refreshNow()
-                        }
-                    ))
-                    .labelsHidden()
-                    .help(L("col.inTicker.help", comment: ""))
-                }
-                TableColumn("") { (h: Holding) in
-                    HStack(spacing: 4) {
-                        Button { editing = h } label: {
-                            Image(systemName: "pencil")
-                        }
-                        .buttonStyle(.borderless)
-                        .help(L("action.edit", comment: ""))
-                        Button(role: .destructive) {
-                            try? container?.holdingsRepo.delete(id: h.id)
-                            reload()
-                            container?.refresher.refreshNow()
-                        } label: {
-                            Image(systemName: "trash")
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                }
-            }
+            holdingsList
 
             if holdings.isEmpty {
                 Text(L("holdings.empty", comment: ""))
@@ -126,6 +68,95 @@ struct PortfolioPane: View {
 
     private func reload() {
         holdings = (try? container?.holdingsRepo.all()) ?? []
+    }
+
+    /// 用 List 替代 Table 是为了支持 .onMove 拖拽改顺序;Table 在 SwiftUI 里目前
+    /// 没有 onMove API。手撸列宽对齐成「类表格」外观,头部一行写死作伪表头。
+    private var holdingsList: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // 伪表头
+            HStack(spacing: 8) {
+                Text("").frame(width: 14)  // 留给 drag handle / spacing
+                Text(L("col.symbol", comment: "")).frame(width: 80, alignment: .leading)
+                Text(L("col.name", comment: "")).frame(maxWidth: .infinity, alignment: .leading)
+                Text(L("col.market", comment: "")).frame(width: 60, alignment: .leading)
+                Text(L("col.qty", comment: "")).frame(width: 70, alignment: .trailing)
+                Text(L("col.cost", comment: "")).frame(width: 90, alignment: .trailing)
+                Text(L("col.inTicker", comment: "")).frame(width: 50, alignment: .center)
+                Spacer().frame(width: 60)  // 编辑/删除按钮列
+            }
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundColor(.secondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+
+            List {
+                ForEach(holdings) { h in
+                    holdingRow(h)
+                }
+                .onMove(perform: move)
+            }
+            .listStyle(.bordered(alternatesRowBackgrounds: true))
+        }
+    }
+
+    @ViewBuilder
+    private func holdingRow(_ h: Holding) -> some View {
+        HStack(spacing: 8) {
+            Text(h.symbol.market == .us ? h.symbol.code.uppercased() : h.symbol.code)
+                .monospacedDigit()
+                .frame(width: 80, alignment: .leading)
+            Text(h.name)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(h.symbol.market.displayName)
+                .frame(width: 60, alignment: .leading)
+                .foregroundColor(.secondary)
+            Text("\(h.quantity)")
+                .monospacedDigit()
+                .frame(width: 70, alignment: .trailing)
+            Text(h.currency.format(h.costPrice))
+                .monospacedDigit()
+                .frame(width: 90, alignment: .trailing)
+            Toggle("", isOn: Binding(
+                get: { h.inTicker },
+                set: { newValue in
+                    var copy = h
+                    copy.inTicker = newValue
+                    try? container?.holdingsRepo.upsert(copy)
+                    reload()
+                    container?.refresher.refreshNow()
+                }
+            ))
+            .labelsHidden()
+            .help(L("col.inTicker.help", comment: ""))
+            .frame(width: 50, alignment: .center)
+            HStack(spacing: 4) {
+                Button { editing = h } label: {
+                    Image(systemName: "pencil")
+                }
+                .buttonStyle(.borderless)
+                .help(L("action.edit", comment: ""))
+                Button(role: .destructive) {
+                    try? container?.holdingsRepo.delete(id: h.id)
+                    reload()
+                    container?.refresher.refreshNow()
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.borderless)
+            }
+            .frame(width: 60)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { editing = h }
+    }
+
+    private func move(from source: IndexSet, to destination: Int) {
+        holdings.move(fromOffsets: source, toOffset: destination)
+        let ids = holdings.map { $0.id }
+        try? container?.holdingsRepo.reorder(ids: ids)
+        container?.refresher.refreshNow()
     }
 
     private func exportCSV() {
