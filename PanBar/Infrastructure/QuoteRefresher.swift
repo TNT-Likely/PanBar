@@ -62,6 +62,9 @@ final class QuoteRefresher: ObservableObject {
         // 实际 snapshot 在 seedSnapshotFromCacheIfNeeded() 里异步算(需要 FX)。
         if let cached = quoteCacheRepo?.loadAll(), !cached.isEmpty {
             self.quotes = cached
+            Log.quote.info("seeded \(cached.count, privacy: .public) quotes from disk")
+        } else {
+            Log.quote.info("quote disk cache is empty")
         }
 
         observeSystem()

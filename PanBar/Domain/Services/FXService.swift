@@ -34,12 +34,22 @@ actor FXService {
     /// 应用启动早期同步调用,从磁盘把上次保存的汇率灌进内存。
     /// 这样后续任何 `rate()` 调用即使网络挂着也能立即返回值,popover 一打开就有本位币换算。
     func seedFromDisk() {
-        guard let repo = cacheRepo else { return }
+        guard let repo = cacheRepo else {
+            Log.fx.info("seedFromDisk: cacheRepo is nil")
+            return
+        }
         let disk = repo.loadAll()
-        guard !disk.isEmpty else { return }
+        guard !disk.isEmpty else {
+            Log.fx.info("seedFromDisk: disk cache is empty")
+            return
+        }
         cache = disk
-        // 注意:lastFetch 仍是 distantPast,下一次 refreshIfNeeded 还是会去拉最新值,
-        // 但用户看到的不再是空,只是「可能稍旧」。
+        // 用磁盘最新一条的 asOf 作为 lastFetch,这样 UI 显示「N 分钟前更新」是有意义的
+        // (而不是「尚未拉取」)。后续如果网络拉到新值会再覆盖。
+        if let newest = disk.values.map({ $0.asOf }).max() {
+            lastFetch = newest
+        }
+        Log.fx.info("seedFromDisk: loaded \(disk.count, privacy: .public) pairs from disk")
     }
 
     /// 把 `value` 从 `from` 换算到 `to`。返回 nil 表示当前无法换算。
