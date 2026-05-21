@@ -61,6 +61,19 @@ struct SettingsRepository {
         static let privacyManualHide = "privacy_manual_hide"
         static let tickerIndexIDs = "ticker_index_ids"
         static let fxRefreshInterval = "fx_refresh_interval"   // seconds; 0 = off
+        static let quoteRefreshInterval = "quote_refresh_interval"  // seconds during open hours
+        static let marketOverrideA = "market_override_a"
+        static let marketOverrideHK = "market_override_hk"
+        static let marketOverrideUS = "market_override_us"
+
+        /// 拼出市场对应的 override key,避免外部各自拼字符串
+        static func marketOverride(_ market: Market) -> String {
+            switch market {
+            case .a:  return marketOverrideA
+            case .hk: return marketOverrideHK
+            case .us: return marketOverrideUS
+            }
+        }
     }
 
     /// FX 自动刷新间隔(秒)。0 = 关闭自动刷新。
@@ -71,6 +84,16 @@ struct SettingsRepository {
 
     func setFXRefreshInterval(_ seconds: Int) throws {
         try set(Keys.fxRefreshInterval, "\(max(0, seconds))")
+    }
+
+    /// 开盘期间行情刷新间隔(秒)。popover 打开时无视此值固定 3s。
+    var quoteRefreshInterval: Int {
+        if let s = string(Keys.quoteRefreshInterval), let v = Int(s), v >= 3 { return v }
+        return 5
+    }
+
+    func setQuoteRefreshInterval(_ seconds: Int) throws {
+        try set(Keys.quoteRefreshInterval, "\(max(3, seconds))")
     }
 
     var baseCurrency: Currency {

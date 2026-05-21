@@ -64,7 +64,7 @@ final class DependencyContainer {
         let fx = FXService(provider: fxProvider, cacheRepo: fxCacheRepo)
         self.fx = fx
 
-        self.clock = MarketClock()
+        self.clock = MarketClock(settingsRepo: settingsRepo)
         self.portfolioService = PortfolioService(
             holdingsRepo: holdingsRepo,
             watchlistRepo: watchlistRepo,
@@ -101,6 +101,7 @@ final class DependencyContainer {
     func warmup() async {
         let interval = settingsRepo.fxRefreshInterval
         await fx.setAutoRefreshInterval(interval)
+        refresher.tickerInterval = TimeInterval(settingsRepo.quoteRefreshInterval)
 
         // 同步动作:磁盘 seed,必须先于 start() 完成
         await fx.seedFromDisk()
