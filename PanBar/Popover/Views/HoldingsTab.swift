@@ -20,10 +20,12 @@ struct HoldingsTab: View {
                         emptyState
                     } else {
                         // 列表来源是 vm.holdings(DB 同步可读),不依赖 snapshot 的合成进度。
-                        // 价格 / 盈亏 / 本位币换算从 snapshot 找,找不到就降级展示(只显示代码 + 成本)。
+                        // 价格直接从 refresher.quotes 取(QuoteRefresher.init 同步从磁盘 seed),
+                        // 盈亏 / 本位币换算从 snapshot 取(异步合成完才有)。
                         ForEach(vm.holdings) { holding in
                             HoldingRow(
                                 holding: holding,
+                                quote: refresher.quotes[holding.symbol],
                                 position: positionsByID[holding.id],
                                 density: appearance.density,
                                 scheme: prefs.colorScheme,
@@ -107,14 +109,22 @@ struct HoldingsTab: View {
 
 private struct HoldingRow: View {
     let holding: Holding
-    /// snapshot 还没合成时为 nil,行降级为「只有代码 + 成本」的骨架。
+    /// 行情:从 refresher.quotes 同步取(冷启动时已从磁盘 seed)。
+    let quote: Quote?
+    /// snapshot.positions 中匹配的那条:含本位币换算等字段。snapshot 异步合成,可能晚于 quote。
     let position: HoldingPosition?
     let density: PopoverDensity
     let scheme: TickerColorScheme
     let baseCurrency: Currency
 
+    /// 只要有 quote(无论 position 有没有),立即就能算出原币种的盈亏。
+    /// 本位币换算需要 FX,只能依赖 position。
+    private var nativePnL: Decimal? {
+        guard let q = quote else { return nil }
+        return (q.price - holding.costPrice) * holding.quantity
+    }
+
     var body: some View {
-        let q = position?.quote
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
@@ -133,30 +143,31 @@ private struct HoldingRow: View {
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {
                 HStack(spacing: 4) {
-                    if let q = q {
+                    if let q = quote {
                         Text(holding.currency.format(q.price))
                             .font(.system(size: 12, weight: .semibold))
                             .monospacedDigit()
                         pctPill(q.changePct)
                     } else {
-                        // 还没价格 —— 占位,避免行高跳动
                         Text("—")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.secondary)
                             .monospacedDigit()
                     }
                 }
-                if let pos = position, q != nil {
-                    Text(signedPnL(pos.pnl, currency: holding.currency))
+                if let pnl = nativePnL {
+                    Text(signedPnL(pnl, currency: holding.currency))
                         .font(.system(size: 11))
-                        .foregroundColor(pnlColor(pos.pnl))
+                        .foregroundColor(pnlColor(pnl))
                         .monospacedDigit()
-                    if holding.currency != baseCurrency, let basePnL = pos.basePnL {
-                        Text("≈ " + signedPnL(basePnL, currency: baseCurrency))
-                            .font(.system(size: 10))
-                            .foregroundColor(pnlColor(pos.pnl).opacity(0.7))
-                            .monospacedDigit()
-                    }
+                }
+                // 本位币换算依赖 FX,只能从 snapshot 拿
+                if holding.currency != baseCurrency,
+                   let pos = position, let basePnL = pos.basePnL {
+                    Text("≈ " + signedPnL(basePnL, currency: baseCurrency))
+                        .font(.system(size: 10))
+                        .foregroundColor(pnlColor(pos.pnl).opacity(0.7))
+                        .monospacedDigit()
                 }
             }
         }
