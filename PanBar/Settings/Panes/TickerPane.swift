@@ -41,6 +41,13 @@ private struct TickerPaneContent: View {
                 }
                 if prefs.displayMode == .carousel {
                     Toggle(L("settings.pauseOnHover", comment: ""), isOn: $prefs.pauseOnHover)
+                    Picker(L("ticker.carouselDwell", comment: ""), selection: $prefs.carouselDwell) {
+                        Text(L("ticker.dwell.2s", comment: "")).tag(2)
+                        Text(L("ticker.dwell.3s", comment: "")).tag(3)
+                        Text(L("ticker.dwell.4s", comment: "")).tag(4)
+                        Text(L("ticker.dwell.6s", comment: "")).tag(6)
+                        Text(L("ticker.dwell.10s", comment: "")).tag(10)
+                    }
                 }
                 if prefs.displayMode == .minimal {
                     Picker(L("ticker.minimalMetric", comment: ""), selection: $prefs.minimalMetric) {

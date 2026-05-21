@@ -68,6 +68,7 @@ final class StatusItemController {
         }
         if let carousel = tickerView as? CarouselTickerView {
             carousel.pauseOnHover = prefs.pauseOnHover
+            carousel.dwell = CFTimeInterval(prefs.carouselDwell)
         }
         if let compact = tickerView as? CompactTickerView {
             compact.scheme = prefs.colorScheme

@@ -10,8 +10,8 @@ final class CarouselTickerView: NSView {
     private var transition: CGFloat = 1
     private var transitionStart: CFTimeInterval = 0
     private let transitionDuration: CFTimeInterval = 0.35
-    /// 每条停留 4s 后切下一条
-    private let dwell: CFTimeInterval = 4
+    /// 每条停留秒数,通过 controller 注入(配置里调)
+    var dwell: CFTimeInterval = 4
     private var lastSwitch: CFTimeInterval = 0
     private var displayLink: CVDisplayLink?
     private var hovered: Bool = false

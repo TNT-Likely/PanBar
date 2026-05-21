@@ -49,6 +49,10 @@ final class TickerPreferences: ObservableObject {
     @Published var minimalMetric: MinimalMetric {
         didSet { try? repo.set(SettingsRepository.Keys.tickerMinimalMetric, minimalMetric.rawValue) }
     }
+    /// 轮播每条停留秒数(2/3/4/6/10),只对 carousel 模式生效。
+    @Published var carouselDwell: Int {
+        didSet { try? repo.set(SettingsRepository.Keys.tickerCarouselDwell, "\(carouselDwell)") }
+    }
 
     private let repo: SettingsRepository
 
@@ -72,6 +76,7 @@ final class TickerPreferences: ObservableObject {
         }
         self.displayMode = TickerDisplayMode(rawValue: repo.string(SettingsRepository.Keys.tickerDisplayMode) ?? "") ?? .scroll
         self.minimalMetric = MinimalMetric(rawValue: repo.string(SettingsRepository.Keys.tickerMinimalMetric) ?? "") ?? .todayPnL
+        self.carouselDwell = Int(repo.string(SettingsRepository.Keys.tickerCarouselDwell) ?? "") ?? 4
     }
 }
 
