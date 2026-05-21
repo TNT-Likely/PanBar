@@ -184,8 +184,14 @@
     },
     "market.quoteInterval.hint" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Used while markets are open. When the popover is showing, refresh stays at 3s. When every market is closed, auto-refresh pauses completely." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开盘期间用此间隔刷新。popover 打开时固定 3s,所有市场都休市时完全暂停自动刷新。" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Used while markets are open. When the popover is showing, refresh stays at 3s." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开盘期间用此间隔刷新。popover 打开时固定 3s。" } }
+      }
+    },
+    "market.pauseWhenClosed" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pause auto-refresh when all markets closed" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "全市场休市时暂停自动刷新" } }
       }
     },
     "market.quoteInterval.3s" : {

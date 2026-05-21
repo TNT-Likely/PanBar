@@ -51,6 +51,7 @@ private struct MarketsPaneContent: View {
     let container: DependencyContainer
 
     @State private var quoteRefreshChoice: QuoteRefreshChoice = .normal
+    @State private var pauseWhenClosed: Bool = true
     @State private var statusTick: Date = Date()
     private let timer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
 
@@ -66,6 +67,11 @@ private struct MarketsPaneContent: View {
                     try? container.settingsRepo.setQuoteRefreshInterval(v.rawValue)
                     container.refresher.tickerInterval = TimeInterval(v.rawValue)
                 }
+                Toggle(L("market.pauseWhenClosed", comment: ""), isOn: $pauseWhenClosed)
+                    .onChange(of: pauseWhenClosed) { v in
+                        try? container.settingsRepo.setPauseRefreshWhenClosed(v)
+                        container.refresher.pauseWhenClosed = v
+                    }
                 Text(L("market.quoteInterval.hint", comment: ""))
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -88,6 +94,7 @@ private struct MarketsPaneContent: View {
         .padding(20)
         .onAppear {
             quoteRefreshChoice = QuoteRefreshChoice.nearest(to: container.settingsRepo.quoteRefreshInterval)
+            pauseWhenClosed = container.settingsRepo.pauseRefreshWhenClosed
         }
         .onReceive(timer) { statusTick = $0 }
     }

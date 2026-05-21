@@ -65,6 +65,7 @@ struct SettingsRepository {
         static let marketOverrideA = "market_override_a"
         static let marketOverrideHK = "market_override_hk"
         static let marketOverrideUS = "market_override_us"
+        static let pauseRefreshWhenClosed = "pause_refresh_when_closed"
 
         /// 拼出市场对应的 override key,避免外部各自拼字符串
         static func marketOverride(_ market: Market) -> String {
@@ -94,6 +95,17 @@ struct SettingsRepository {
 
     func setQuoteRefreshInterval(_ seconds: Int) throws {
         try set(Keys.quoteRefreshInterval, "\(max(3, seconds))")
+    }
+
+    /// 三个市场都休市时是否完全暂停自动刷新。默认 true(开)。
+    var pauseRefreshWhenClosed: Bool {
+        // 缺省 / 非法值都视为 true(默认开)
+        let v = string(Keys.pauseRefreshWhenClosed)
+        return v != "0"
+    }
+
+    func setPauseRefreshWhenClosed(_ enabled: Bool) throws {
+        try set(Keys.pauseRefreshWhenClosed, enabled ? "1" : "0")
     }
 
     var baseCurrency: Currency {
