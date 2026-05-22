@@ -32,8 +32,13 @@ struct SymbolSearchResult: Identifiable, Equatable, Hashable, Sendable {
 final class SymbolSearch: Sendable {
     let http: HTTPClient
 
-    /// 允许的类型(只显示股票)
-    private static let allowedTypes: Set<String> = ["GP", "GP-A", "GP-B"]
+    /// 允许的类型:股票(GP*) + 基金 / ETF / LOF / 可转债。
+    /// 腾讯 smartbox 返回的 type 字段可能是 GP / GP-A / GP-B / ETF / LOF / JJ / ZQ 等;
+    /// 过滤掉 ZS(指数,在大盘里展示)/ QZ(权证)就够了。
+    private static let allowedTypes: Set<String> = [
+        "GP", "GP-A", "GP-B",
+        "ETF", "LOF", "JJ", "ZQ",
+    ]
 
     init(http: HTTPClient = HTTPClient(defaultHeaders: ["Referer": "https://gu.qq.com/"])) {
         self.http = http

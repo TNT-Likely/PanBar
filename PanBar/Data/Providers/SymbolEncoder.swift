@@ -82,13 +82,31 @@ enum SymbolEncoder {
     // MARK: helpers
 
     /// A 股代码 → "sh" / "sz"。返回 nil 表示不识别。
+    /// 用 2 位前缀做主分类(避开 SSE 可转债 11x/13x 与 SZSE 基金 1xx 同首位字符歧义)。
     static func aShareExchange(_ code: String) -> String? {
+        if code.count >= 2 {
+            switch code.prefix(2) {
+            // SSE:主板 6 / 科创板 68 / B 股 9 / 可转债 11/13 / ETF 50-58 / 基金
+            case "60", "68", "11", "13",
+                 "50", "51", "52", "53", "56", "58",
+                 "90":
+                return "sh"
+            // SZSE:主板 00 / 中小 002 / 创业板 30 / B 股 20 / 债 12 / ETF/LOF 15-18
+            case "00", "30", "20",
+                 "12", "15", "16", "17", "18":
+                return "sz"
+            // 北交所(本期不支持)
+            case "43", "83", "87", "88", "92":
+                return nil
+            default:
+                break
+            }
+        }
         guard let first = code.first else { return nil }
         switch first {
-        case "6", "9":      return "sh"             // 沪市主板、B股
-        case "0", "2", "3": return "sz"             // 深市主板、中小、创业
-        case "4", "8":      return nil              // 北交所(本期不支持)
-        default:            return nil
+        case "6", "9", "5": return "sh"
+        case "0", "2", "3", "1": return "sz"
+        default: return nil
         }
     }
 
