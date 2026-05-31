@@ -131,8 +131,8 @@ private struct HoldingRow: View {
     /// hover 时显示 inline 编辑铅笔(放在 name 后面,不挡涨跌)
     let showEditButton: Bool
     let onEdit: () -> Void
-    private let allTimeColumnWidth: CGFloat = 86
-    private let priceColumnWidth: CGFloat = 116
+    private let allTimeColumnWidth: CGFloat = 84
+    private let priceColumnWidth: CGFloat = 104
 
     /// 只要有 quote(无论 position 有没有),立即就能算出原币种的盈亏。
     /// 本位币换算需要 FX,只能依赖 position。
@@ -153,11 +153,11 @@ private struct HoldingRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                     Text(displayCode(holding.symbol))
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 12, weight: .medium))
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
                     Text(holding.name)
@@ -174,7 +174,7 @@ private struct HoldingRow: View {
                     .help(L("action.edit", comment: ""))
                     .opacity(showEditButton ? 1 : 0)
                     .disabled(!showEditButton)
-                    .frame(width: 12, height: 12)
+                    .frame(width: 10, height: 12)
                     .accessibilityHidden(!showEditButton)
                 }
                 // 右侧 3 行时,在两条左侧文字之间塞 Spacer 把第二行推到底,
@@ -206,6 +206,8 @@ private struct HoldingRow: View {
                             .monospacedDigit()
                     }
                 }
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
                 if let pnl = nativeTodayPnL {
                     labeledPnL(
                         label: L("summary.today", comment: ""),
