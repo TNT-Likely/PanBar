@@ -131,6 +131,8 @@ private struct HoldingRow: View {
     /// hover 时显示 inline 编辑铅笔(放在 name 后面,不挡涨跌)
     let showEditButton: Bool
     let onEdit: () -> Void
+    private let allTimeColumnWidth: CGFloat = 86
+    private let priceColumnWidth: CGFloat = 116
 
     /// 只要有 quote(无论 position 有没有),立即就能算出原币种的盈亏。
     /// 本位币换算需要 FX,只能依赖 position。
@@ -151,25 +153,29 @@ private struct HoldingRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(displayCode(holding.symbol))
                         .font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                     Text(holding.name)
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
-                    if showEditButton {
-                        Button(action: onEdit) {
-                            Image(systemName: "pencil")
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundColor(.accentColor)
-                        }
-                        .buttonStyle(.plain)
-                        .help(L("action.edit", comment: ""))
-                        .transition(.opacity)
+                        .truncationMode(.tail)
+                    Button(action: onEdit) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(.accentColor)
                     }
+                    .buttonStyle(.plain)
+                    .help(L("action.edit", comment: ""))
+                    .opacity(showEditButton ? 1 : 0)
+                    .disabled(!showEditButton)
+                    .frame(width: 12, height: 12)
+                    .accessibilityHidden(!showEditButton)
                 }
                 // 右侧 3 行时,在两条左侧文字之间塞 Spacer 把第二行推到底,
                 // 跟右侧的第三行(≈ base)平齐。右侧 2 行时不撑,正常紧贴排。
@@ -180,11 +186,12 @@ private struct HoldingRow: View {
                     .font(.system(size: 10))
                     .foregroundColor(.secondary.opacity(0.85))
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
             .frame(maxHeight: hasBaseConversion ? .infinity : nil, alignment: .top)
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             allTimeColumn
-            Spacer()
             VStack(alignment: .trailing, spacing: 3) {
                 HStack(spacing: 4) {
                     if let q = quote {
@@ -208,6 +215,7 @@ private struct HoldingRow: View {
                     )
                 }
             }
+            .frame(width: priceColumnWidth, alignment: .trailing)
             .layoutPriority(2)
         }
         .padding(.horizontal, density.rowHorizontalPadding)
@@ -220,6 +228,7 @@ private struct HoldingRow: View {
             Text(L("summary.allTime", comment: ""))
                 .font(.system(size: 10, weight: .medium))
                 .foregroundColor(.secondary)
+                .lineLimit(1)
             if let pnl = nativePnL {
                 Text(signedPnL(pnl, currency: holding.currency))
                     .font(.system(size: 11, weight: .semibold))
@@ -232,6 +241,7 @@ private struct HoldingRow: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.secondary)
                     .monospacedDigit()
+                    .lineLimit(1)
             }
             // 本位币换算依赖 FX,只能从 snapshot 拿。
             if holding.currency != baseCurrency,
@@ -244,7 +254,7 @@ private struct HoldingRow: View {
                     .minimumScaleFactor(0.8)
             }
         }
-        .frame(width: 74, alignment: .leading)
+        .frame(width: allTimeColumnWidth, alignment: .leading)
         .layoutPriority(1)
     }
 
