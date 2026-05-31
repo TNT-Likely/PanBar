@@ -13,6 +13,8 @@ final class MinimalTickerView: NSView {
     private var content: Content?
     var scheme: TickerColorScheme = .east
     var privacyHidden: Bool = false
+    var showsIcon: Bool = true
+    var preferredTotalWidth: CGFloat?
     var hovered: Bool = false
     var onContentChanged: (() -> Void)?
 
@@ -20,8 +22,15 @@ final class MinimalTickerView: NSView {
     private let valueFont = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
 
     var totalWidth: CGFloat {
-        guard let _ = content else { return iconWidth + 40 }
-        return iconWidth + 6 + max(56, renderedString().size().width) + 6
+        if let preferredTotalWidth {
+            return max(40, preferredTotalWidth)
+        }
+        guard let _ = content else { return leadingTextX + 40 }
+        return leadingTextX + max(56, renderedString().size().width) + 6
+    }
+
+    private var leadingTextX: CGFloat {
+        showsIcon ? iconWidth + 6 : 2
     }
 
     override var isFlipped: Bool { false }
@@ -50,21 +59,34 @@ final class MinimalTickerView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        drawIcon(in: NSRect(x: 2, y: (bounds.height - iconWidth) / 2, width: iconWidth, height: iconWidth))
+        if showsIcon {
+            drawIcon(in: NSRect(x: 2, y: (bounds.height - iconWidth) / 2, width: iconWidth, height: iconWidth))
+        }
+
+        let textRect = NSRect(
+            x: leadingTextX,
+            y: 0,
+            width: max(20, totalWidth - leadingTextX - 4),
+            height: bounds.height
+        )
 
         if privacyHidden {
             let dots = NSAttributedString(string: "•••", attributes: [
                 .font: valueFont,
                 .foregroundColor: NSColor.secondaryLabelColor
             ])
-            dots.draw(at: NSPoint(x: iconWidth + 8, y: bounds.midY - dots.size().height / 2))
+            dots.draw(at: NSPoint(x: textRect.minX + 4, y: bounds.midY - dots.size().height / 2))
             return
         }
 
         let str = renderedString()
         let size = str.size()
-        let p = NSPoint(x: iconWidth + 6, y: (bounds.height - size.height) / 2)
+        let p = NSPoint(x: textRect.minX, y: (bounds.height - size.height) / 2)
+        let ctx = NSGraphicsContext.current?.cgContext
+        ctx?.saveGState()
+        NSBezierPath(rect: textRect).addClip()
         str.draw(at: p)
+        ctx?.restoreGState()
     }
 
     private func renderedString() -> NSAttributedString {

@@ -9,12 +9,16 @@ import AppKit
 protocol MenuBarTickerView: NSView {
     var totalWidth: CGFloat { get }
     var privacyHidden: Bool { get set }
+    var showsIcon: Bool { get set }
+    var preferredTotalWidth: CGFloat? { get set }
     /// 鼠标 hover 状态;由 controller 监听 button 的 tracking area 同步过来
     var hovered: Bool { get set }
     /// 内容变化通知(动画帧 / 数据更新),controller 重新捕图。
     var onContentChanged: (() -> Void)? { get set }
     /// 暂停动画(全市场休市 / 用户开关)
     func setPaused(_ paused: Bool)
+    /// view 被替换前停止内部动画源,避免旧 display link 的异步回调撞到新模式。
+    func invalidateAnimation()
     /// 把当前状态画进 NSImage。size 跟 totalWidth × 22 一致。
     func renderImage() -> NSImage
 }
@@ -51,9 +55,11 @@ extension CarouselTickerView: MenuBarTickerView {
 extension CompactTickerView: MenuBarTickerView {
     func renderImage() -> NSImage { defaultRenderImage() }
     func setPaused(_ paused: Bool) {}   // 无动画
+    func invalidateAnimation() {}
 }
 
 extension MinimalTickerView: MenuBarTickerView {
     func renderImage() -> NSImage { defaultRenderImage() }
     func setPaused(_ paused: Bool) {}   // 无动画
+    func invalidateAnimation() {}
 }
