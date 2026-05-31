@@ -170,6 +170,54 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "展现形式" } }
       }
     },
+    "ticker.modeSettingsSection" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Display Mode Settings" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "展现形式设置" } }
+      }
+    },
+    "ticker.autoMenuBarWidth" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Automatic menu bar width" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "自动菜单栏宽度" } }
+      }
+    },
+    "ticker.menuBarWidth" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Menu bar width: %d pt" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "菜单栏宽度: %d pt" } }
+      }
+    },
+    "ticker.contentSection" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Display Content" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示内容" } }
+      }
+    },
+    "ticker.showAppIcon" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show app icon" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示软件图标" } }
+      }
+    },
+    "ticker.showQuoteCode" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show stock code" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示股票代码" } }
+      }
+    },
+    "ticker.showQuoteName" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show stock name" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示股票名字" } }
+      }
+    },
+    "ticker.showDirectionArrow" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show direction arrow" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示方向箭头" } }
+      }
+    },
     "displayMode.scroll" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Scroll (horizontal)" } },
@@ -208,8 +256,8 @@
     },
     "displayMode.compact.hint" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Three abbreviated numbers (today / total P&L / assets) with K/M suffix. No animation." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "三个简写数字(今日 / 累计 / 总市值),K/M 后缀,不动。" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fixed summary metrics with abbreviated numbers. No animation." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "固定显示勾选的汇总指标,K/M 简写,不滚动。" } }
       }
     },
     "displayMode.minimal.hint" : {
@@ -526,8 +574,8 @@
     },
     "col.inTicker" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ticker" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "滚动" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Menu Bar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "菜单栏" } }
       }
     },
     "col.inTicker.help" : {
@@ -562,8 +610,8 @@
     },
     "ticker.summaryHint" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Applies to all display modes (scroll / carousel / fixed). Fixed mode shows only these, no individual quotes." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "对全部展现形式生效(滚动 / 轮播 / 固定)。固定模式只显示这几项,不展示个股。" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Applies to all display modes. Fixed mode shows only these summary metrics." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "对全部展现形式生效。固定模式只显示这些汇总指标,不展示个股。" } }
       }
     },
     "ticker.itemsHint.title" : {
@@ -682,8 +730,8 @@
     },
     "settings.ticker" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ticker" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "滚动" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Menu Bar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "菜单栏" } }
       }
     },
     "settings.alerts" : {
@@ -706,8 +754,8 @@
     },
     "settings.pauseOnHover" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pause on hover" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "Hover 时暂停" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pause when hovering over the menu bar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "鼠标悬停菜单栏时暂停" } }
       }
     },
     "settings.pauseWhenClosed" : {
@@ -1078,8 +1126,8 @@
     },
     "ticker.indicesSection" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Indices in Ticker" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "滚动条 · 大盘指数" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Market Indices" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "大盘指数" } }
       }
     },
     "ticker.indicesHint" : {
@@ -1090,14 +1138,14 @@
     },
     "ticker.holdingsSection" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Holdings in Ticker" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "滚动条 · 持仓" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Holdings" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "持仓" } }
       }
     },
     "ticker.watchlistSection" : {
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Watchlist in Ticker" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "滚动条 · 自选" } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Watchlist" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "自选" } }
       }
     },
     "settings.language" : {

@@ -21,11 +21,30 @@ final class CarouselTickerView: NSView {
     var onContentChanged: (() -> Void)?
 
     let iconWidth: CGFloat = 18
+    var showsIcon: Bool = true
+    var preferredTotalWidth: CGFloat?
     var visibleTextWidth: CGFloat = 200
     var privacyHidden: Bool = false
+    /// 没有任何可见内容时仍保留一点点击区域,但不显示占位文字。
+    private let emptyHitTargetWidth: CGFloat = 24
 
     var totalWidth: CGFloat {
-        iconWidth + 6 + visibleTextWidth + 4
+        if let preferredTotalWidth {
+            return max(40, preferredTotalWidth)
+        }
+        if items.isEmpty {
+            return max(emptyHitTargetWidth, leadingTextX + 4)
+        }
+        return leadingTextX + currentTextWidth + 4
+    }
+
+    private var leadingTextX: CGFloat {
+        showsIcon ? iconWidth + 6 : 2
+    }
+
+    private var currentTextWidth: CGFloat {
+        guard items.indices.contains(currentIndex) else { return 0 }
+        return min(360, max(20, ceil(items[currentIndex].size().width) + 8))
     }
 
     override var isFlipped: Bool { false }
@@ -56,7 +75,11 @@ final class CarouselTickerView: NSView {
         self.items = items
         if currentIndex >= items.count { currentIndex = 0 }
         let maxW = items.map { $0.size().width }.max() ?? 0
-        visibleTextWidth = max(80, maxW + 8)
+        if maxW > 0 {
+            visibleTextWidth = min(360, max(100, maxW + 8))
+        } else {
+            visibleTextWidth = 0
+        }
         needsDisplay = true
         onContentChanged?()
     }
@@ -81,6 +104,10 @@ final class CarouselTickerView: NSView {
     private func stopAnimation() {
         if let dl = displayLink { CVDisplayLinkStop(dl) }
         displayLink = nil
+    }
+
+    func invalidateAnimation() {
+        stopAnimation()
     }
 
     private func step(now: CFTimeInterval) {
@@ -115,12 +142,14 @@ final class CarouselTickerView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        drawIcon(in: NSRect(x: 2, y: (bounds.height - iconWidth) / 2, width: iconWidth, height: iconWidth))
+        if showsIcon {
+            drawIcon(in: NSRect(x: 2, y: (bounds.height - iconWidth) / 2, width: iconWidth, height: iconWidth))
+        }
 
         let textRect = NSRect(
-            x: iconWidth + 6,
+            x: leadingTextX,
             y: 0,
-            width: visibleTextWidth,
+            width: preferredTotalWidth == nil ? currentTextWidth : max(20, totalWidth - leadingTextX - 4),
             height: bounds.height
         )
 
