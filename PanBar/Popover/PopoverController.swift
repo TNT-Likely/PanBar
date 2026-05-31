@@ -9,6 +9,7 @@ final class PopoverController {
     /// 监听 popover 之外的点击,关 popover。`.transient` 行为对菜单栏 popover 有时漏
     /// (尤其是点系统菜单栏 / 通知 / 其它 app 时),这里多加一层保险。
     private var eventMonitor: Any?
+    private var didCloseObserver: NSObjectProtocol?
     var onClose: (() -> Void)?
 
     var isShown: Bool { popover.isShown }
@@ -46,7 +47,7 @@ final class PopoverController {
 
         // popover 通过 .transient 行为自己关时,也要更新 refresher 状态
         // (否则 pace 会一直停在 .popoverOpen,后台多耗一点请求)
-        NotificationCenter.default.addObserver(
+        didCloseObserver = NotificationCenter.default.addObserver(
             forName: NSPopover.didCloseNotification,
             object: popover,
             queue: .main
@@ -59,7 +60,9 @@ final class PopoverController {
 
     deinit {
         if let m = eventMonitor { NSEvent.removeMonitor(m) }
-        NotificationCenter.default.removeObserver(self)
+        if let observer = didCloseObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 
     private func handlePopoverClosed() {
