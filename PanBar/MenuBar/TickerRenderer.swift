@@ -31,6 +31,7 @@ struct TickerRenderer {
     /// 多项之间用 "  ·  " 分隔。
     func render(items: [TickerItem]) -> NSAttributedString {
         guard !items.isEmpty else {
+            // 用户关闭全部展示项时保持视觉空白;具体 view 会保留最小点击宽度。
             return NSAttributedString()
         }
 

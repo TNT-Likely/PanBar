@@ -43,7 +43,7 @@ final class TickerPreferences: ObservableObject {
     }
     @Published var menuBarWidth: Int {
         didSet {
-            let clamped = min(520, max(80, menuBarWidth))
+            let clamped = Self.clampMenuBarWidth(menuBarWidth)
             if clamped != menuBarWidth {
                 menuBarWidth = clamped
             } else {
@@ -53,7 +53,7 @@ final class TickerPreferences: ObservableObject {
     }
     @Published var scrollMenuBarWidth: Int {
         didSet {
-            let clamped = min(720, max(160, scrollMenuBarWidth))
+            let clamped = Self.clampScrollMenuBarWidth(scrollMenuBarWidth)
             if clamped != scrollMenuBarWidth {
                 scrollMenuBarWidth = clamped
             } else {
@@ -63,7 +63,7 @@ final class TickerPreferences: ObservableObject {
     }
     @Published var carouselMenuBarWidth: Int {
         didSet {
-            let clamped = min(360, max(100, carouselMenuBarWidth))
+            let clamped = Self.clampCarouselMenuBarWidth(carouselMenuBarWidth)
             if clamped != carouselMenuBarWidth {
                 carouselMenuBarWidth = clamped
             } else {
@@ -73,7 +73,7 @@ final class TickerPreferences: ObservableObject {
     }
     @Published var compactMenuBarWidth: Int {
         didSet {
-            let clamped = min(360, max(60, compactMenuBarWidth))
+            let clamped = Self.clampCompactMenuBarWidth(compactMenuBarWidth)
             if clamped != compactMenuBarWidth {
                 compactMenuBarWidth = clamped
             } else {
@@ -116,6 +116,22 @@ final class TickerPreferences: ObservableObject {
     }
 
     private let repo: SettingsRepository
+
+    private static func clampMenuBarWidth(_ value: Int) -> Int {
+        min(520, max(80, value))
+    }
+
+    private static func clampScrollMenuBarWidth(_ value: Int) -> Int {
+        min(720, max(160, value))
+    }
+
+    private static func clampCarouselMenuBarWidth(_ value: Int) -> Int {
+        min(360, max(100, value))
+    }
+
+    private static func clampCompactMenuBarWidth(_ value: Int) -> Int {
+        min(360, max(60, value))
+    }
 
     init(repo: SettingsRepository) {
         self.repo = repo
@@ -164,11 +180,22 @@ final class TickerPreferences: ObservableObject {
             self.showQuoteCode = repo.string(SettingsRepository.Keys.tickerShowQuoteCode) != "0"
         }
         self.showQuoteName = repo.string(SettingsRepository.Keys.tickerShowQuoteName) != "0"
-        let legacyWidth = Int(repo.string(SettingsRepository.Keys.tickerMenuBarWidth) ?? "") ?? 280
+        let rawLegacyWidth = Int(repo.string(SettingsRepository.Keys.tickerMenuBarWidth) ?? "") ?? 280
+        let legacyWidth = Self.clampMenuBarWidth(rawLegacyWidth)
         self.menuBarWidth = legacyWidth
-        self.scrollMenuBarWidth = Int(repo.string(SettingsRepository.Keys.tickerScrollMenuBarWidth) ?? "") ?? max(160, legacyWidth)
-        self.carouselMenuBarWidth = Int(repo.string(SettingsRepository.Keys.tickerCarouselMenuBarWidth) ?? "") ?? min(360, max(160, legacyWidth))
-        self.compactMenuBarWidth = Int(repo.string(SettingsRepository.Keys.tickerCompactMenuBarWidth) ?? "") ?? 160
+        try? repo.set(SettingsRepository.Keys.tickerMenuBarWidth, "\(legacyWidth)")
+        let rawScrollWidth = Int(repo.string(SettingsRepository.Keys.tickerScrollMenuBarWidth) ?? "") ?? max(160, legacyWidth)
+        let rawCarouselWidth = Int(repo.string(SettingsRepository.Keys.tickerCarouselMenuBarWidth) ?? "") ?? min(360, max(160, legacyWidth))
+        let rawCompactWidth = Int(repo.string(SettingsRepository.Keys.tickerCompactMenuBarWidth) ?? "") ?? 160
+        let scrollWidth = Self.clampScrollMenuBarWidth(rawScrollWidth)
+        let carouselWidth = Self.clampCarouselMenuBarWidth(rawCarouselWidth)
+        let compactWidth = Self.clampCompactMenuBarWidth(rawCompactWidth)
+        self.scrollMenuBarWidth = scrollWidth
+        self.carouselMenuBarWidth = carouselWidth
+        self.compactMenuBarWidth = compactWidth
+        try? repo.set(SettingsRepository.Keys.tickerScrollMenuBarWidth, "\(scrollWidth)")
+        try? repo.set(SettingsRepository.Keys.tickerCarouselMenuBarWidth, "\(carouselWidth)")
+        try? repo.set(SettingsRepository.Keys.tickerCompactMenuBarWidth, "\(compactWidth)")
         self.scrollAutoWidth = repo.string(SettingsRepository.Keys.tickerScrollAutoWidth) == "1"
         self.carouselAutoWidth = repo.string(SettingsRepository.Keys.tickerCarouselAutoWidth) == "1"
         self.compactAutoWidth = repo.string(SettingsRepository.Keys.tickerCompactAutoWidth) != "0"

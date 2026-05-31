@@ -25,6 +25,8 @@ final class TickerView: NSView {
     var visibleTextWidth: CGFloat = 280
     /// 隐私模式:屏幕共享或用户手动开启时,只显示图标和 "•••",不绘制具体行情。
     var privacyHidden: Bool = false
+    /// 没有任何可见内容时仍保留一点点击区域,但不显示占位文字。
+    private let emptyHitTargetWidth: CGFloat = 24
 
     /// 文字宽度(单条 attributed 的渲染宽度)。
     private var attributedWidth: CGFloat = 0
@@ -40,11 +42,11 @@ final class TickerView: NSView {
     override var allowsVibrancy: Bool { false }
 
     var totalWidth: CGFloat {
-        if attributed.length == 0 {
-            return leadingTextX + 4
-        }
         if let preferredTotalWidth {
             return max(40, preferredTotalWidth)
+        }
+        if attributed.length == 0 {
+            return max(emptyHitTargetWidth, leadingTextX + 4)
         }
         return leadingTextX + visibleTextWidth + 4
     }
