@@ -40,7 +40,7 @@ final class NotificationService: NSObject, ObservableObject {
             } else {
                 Log.app.info("notification auth granted=\(granted, privacy: .public)")
             }
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self?.refreshAuthorizationStatus()
             }
         }
@@ -48,7 +48,7 @@ final class NotificationService: NSObject, ObservableObject {
 
     func refreshAuthorizationStatus() {
         center.getNotificationSettings { [weak self] settings in
-            DispatchQueue.main.async {
+            Task { @MainActor in
                 self?.authorizationStatus = settings.authorizationStatus
             }
         }
@@ -72,16 +72,20 @@ final class NotificationService: NSObject, ObservableObject {
         center.add(request) { [weak self] error in
             if let error = error {
                 Log.app.error("notification add failed: \(String(describing: error), privacy: .public)")
-                self?.diag("add failed: \(error)")
+                Task { @MainActor in
+                    self?.diag("add failed: \(error)")
+                }
             } else {
-                self?.diag("add ok id=\(identifier)")
+                Task { @MainActor in
+                    self?.diag("add ok id=\(identifier)")
+                }
             }
         }
 
         // 同步检查权限,如果是 denied 就走弹窗 fallback
         center.getNotificationSettings { [weak self] settings in
             if settings.authorizationStatus == .denied {
-                DispatchQueue.main.async {
+                Task { @MainActor in
                     self?.showFallbackAlert(title: title, body: body)
                 }
             }
