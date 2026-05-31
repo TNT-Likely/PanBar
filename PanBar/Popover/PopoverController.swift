@@ -9,6 +9,7 @@ final class PopoverController {
     /// 监听 popover 之外的点击,关 popover。`.transient` 行为对菜单栏 popover 有时漏
     /// (尤其是点系统菜单栏 / 通知 / 其它 app 时),这里多加一层保险。
     private var eventMonitor: Any?
+    var onClose: (() -> Void)?
 
     var isShown: Bool { popover.isShown }
 
@@ -50,7 +51,9 @@ final class PopoverController {
             object: popover,
             queue: .main
         ) { [weak self] _ in
-            self?.handlePopoverClosed()
+            Task { @MainActor in
+                self?.handlePopoverClosed()
+            }
         }
     }
 
@@ -62,13 +65,30 @@ final class PopoverController {
     private func handlePopoverClosed() {
         stopOutsideClickMonitor()
         refresher.setPopoverOpen(false)
+        onClose?()
     }
 
-    func show(relativeTo view: NSView) {
+    func show(relativeTo view: NSView, anchorWidth: CGFloat? = nil) {
         refresher.setPopoverOpen(true)
         refresher.refreshNow()
-        popover.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
+        popover.show(relativeTo: positioningRect(relativeTo: view, anchorWidth: anchorWidth), of: view, preferredEdge: .minY)
         startOutsideClickMonitor()
+    }
+
+    private func positioningRect(relativeTo view: NSView, anchorWidth: CGFloat?) -> NSRect {
+        let rect: NSRect
+        if let anchorWidth {
+            let width = max(view.bounds.width, anchorWidth)
+            rect = NSRect(
+                x: view.bounds.maxX - width,
+                y: view.bounds.minY,
+                width: width,
+                height: view.bounds.height
+            )
+        } else {
+            rect = view.bounds
+        }
+        return rect
     }
 
     func close() {

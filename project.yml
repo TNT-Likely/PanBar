@@ -1,6 +1,7 @@
 name: PanBar
 options:
   bundleIdPrefix: app.panbar
+  xcodeVersion: "26.5"
   deploymentTarget:
     macOS: "13.0"
   createIntermediateGroups: true

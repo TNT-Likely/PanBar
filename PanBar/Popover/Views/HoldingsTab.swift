@@ -139,6 +139,11 @@ private struct HoldingRow: View {
         return (q.price - holding.costPrice) * holding.quantity
     }
 
+    private var nativeTodayPnL: Decimal? {
+        guard let q = quote else { return nil }
+        return (q.price - q.prevClose) * holding.quantity
+    }
+
     /// 右侧是否要显示「≈ 本位币」第三行。决定左侧布局是否要 Spacer 撑底。
     private var hasBaseConversion: Bool {
         guard holding.currency != baseCurrency else { return false }
@@ -146,7 +151,7 @@ private struct HoldingRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .top) {
+        HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(displayCode(holding.symbol))
@@ -177,6 +182,8 @@ private struct HoldingRow: View {
                     .monospacedDigit()
             }
             .frame(maxHeight: hasBaseConversion ? .infinity : nil, alignment: .top)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            allTimeColumn
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {
                 HStack(spacing: 4) {
@@ -192,24 +199,66 @@ private struct HoldingRow: View {
                             .monospacedDigit()
                     }
                 }
-                if let pnl = nativePnL {
-                    Text(signedPnL(pnl, currency: holding.currency))
-                        .font(.system(size: 11))
-                        .foregroundColor(pnlColor(pnl))
-                        .monospacedDigit()
-                }
-                // 本位币换算依赖 FX,只能从 snapshot 拿
-                if holding.currency != baseCurrency,
-                   let pos = position, let basePnL = pos.basePnL {
-                    Text("≈ " + signedPnL(basePnL, currency: baseCurrency))
-                        .font(.system(size: 10))
-                        .foregroundColor(pnlColor(pos.pnl).opacity(0.7))
-                        .monospacedDigit()
+                if let pnl = nativeTodayPnL {
+                    labeledPnL(
+                        label: L("summary.today", comment: ""),
+                        value: pnl,
+                        currency: holding.currency,
+                        fontSize: 11
+                    )
                 }
             }
+            .layoutPriority(2)
         }
         .padding(.horizontal, density.rowHorizontalPadding)
         .padding(.vertical, density.rowVerticalPadding)
+    }
+
+    @ViewBuilder
+    private var allTimeColumn: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(L("summary.allTime", comment: ""))
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.secondary)
+            if let pnl = nativePnL {
+                Text(signedPnL(pnl, currency: holding.currency))
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(pnlColor(pnl))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            } else {
+                Text("—")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.secondary)
+                    .monospacedDigit()
+            }
+            // 本位币换算依赖 FX,只能从 snapshot 拿。
+            if holding.currency != baseCurrency,
+               let pos = position, let basePnL = pos.basePnL {
+                Text("≈ " + signedPnL(basePnL, currency: baseCurrency))
+                    .font(.system(size: 10))
+                    .foregroundColor(pnlColor(pos.pnl).opacity(0.7))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+        }
+        .frame(width: 74, alignment: .leading)
+        .layoutPriority(1)
+    }
+
+    private func labeledPnL(label: String, value: Decimal, currency: Currency, fontSize: CGFloat) -> some View {
+        HStack(spacing: 3) {
+            Text(label)
+                .foregroundColor(.secondary)
+            Text(signedPnL(value, currency: currency))
+                .foregroundColor(pnlColor(value))
+        }
+        .font(.system(size: fontSize))
+        .monospacedDigit()
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
     }
 
     private func displayCode(_ s: SymbolID) -> String {
@@ -218,7 +267,7 @@ private struct HoldingRow: View {
 
     private var detailText: String {
         let qtyDisplay = "\(holding.quantity)"
-        let costDisplay = holding.currency.format(holding.costPrice)
+        let costDisplay = holding.currency.format(holding.costPrice, fractionDigits: 3)
         return String(format: L("holding.detail", comment: ""), qtyDisplay, costDisplay)
     }
 

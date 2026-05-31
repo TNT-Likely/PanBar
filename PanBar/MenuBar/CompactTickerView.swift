@@ -13,6 +13,9 @@ final class CompactTickerView: NSView {
     private var slots: Slots = Slots(todayPnL: nil, allTimePnL: nil, totalAssets: nil, baseCurrency: .cny)
     var scheme: TickerColorScheme = .east
     var privacyHidden: Bool = false
+    var showsIcon: Bool = true
+    var showsDirectionArrow: Bool = false
+    var preferredTotalWidth: CGFloat?
     /// hover 状态(放着满足协议,固定模式实际用不到)
     var hovered: Bool = false
     var onContentChanged: (() -> Void)?
@@ -35,7 +38,16 @@ final class CompactTickerView: NSView {
     }
 
     var totalWidth: CGFloat {
-        iconWidth + 6 + max(60, contentWidth) + 4
+        let width = contentWidth
+        guard width > 0 else { return leadingTextX + 4 }
+        if let preferredTotalWidth {
+            return max(40, preferredTotalWidth)
+        }
+        return leadingTextX + width + 4
+    }
+
+    private var leadingTextX: CGFloat {
+        showsIcon ? iconWidth + 6 : 2
     }
 
     override var isFlipped: Bool { false }
@@ -64,18 +76,30 @@ final class CompactTickerView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        drawIcon(in: NSRect(x: 2, y: (bounds.height - iconWidth) / 2, width: iconWidth, height: iconWidth))
+        if showsIcon {
+            drawIcon(in: NSRect(x: 2, y: (bounds.height - iconWidth) / 2, width: iconWidth, height: iconWidth))
+        }
+
+        let textRect = NSRect(
+            x: leadingTextX,
+            y: 0,
+            width: max(20, totalWidth - leadingTextX - 4),
+            height: bounds.height
+        )
 
         if privacyHidden {
             let dots = NSAttributedString(string: "•••", attributes: [
                 .font: valueFont,
                 .foregroundColor: NSColor.secondaryLabelColor
             ])
-            dots.draw(at: NSPoint(x: iconWidth + 8, y: bounds.midY - dots.size().height / 2))
+            dots.draw(at: NSPoint(x: textRect.minX + 4, y: bounds.midY - dots.size().height / 2))
             return
         }
 
-        var x: CGFloat = iconWidth + 6
+        let ctx = NSGraphicsContext.current?.cgContext
+        ctx?.saveGState()
+        NSBezierPath(rect: textRect).addClip()
+        var x: CGFloat = textRect.minX
         for (i, piece) in renderPieces().enumerated() {
             if i > 0 { x += slotSpacing }
             let size = piece.size()
@@ -83,6 +107,7 @@ final class CompactTickerView: NSView {
             piece.draw(at: NSPoint(x: x, y: y))
             x += size.width
         }
+        ctx?.restoreGState()
     }
 
     /// 当前要展示的三个简写片段(组合 label + 数字 + 颜色,返回 AttributedString)。
@@ -96,7 +121,7 @@ final class CompactTickerView: NSView {
         if let pnl = slots.allTimePnL {
             out.append(piece(label: L("compact.label.allTime", comment: ""), value: pnl, direction: directionOf(pnl)))
         }
-        if let v = slots.totalAssets, v > 0 {
+        if let v = slots.totalAssets {
             out.append(piece(label: L("compact.label.total", comment: ""), value: v, direction: .neutral))
         }
         return out
@@ -125,8 +150,14 @@ final class CompactTickerView: NSView {
         if direction == .neutral {
             text = NumberAbbreviation.formatCurrency(value, currency: slots.baseCurrency)
         } else {
+            let arrow: String
+            if showsDirectionArrow {
+                arrow = direction == .up ? "↑ " : "↓ "
+            } else {
+                arrow = ""
+            }
             let sign = value < 0 ? "-" : "+"
-            text = sign + slots.baseCurrency.symbol + NumberAbbreviation.format(value, currency: slots.baseCurrency)
+            text = arrow + sign + slots.baseCurrency.symbol + NumberAbbreviation.format(value, currency: slots.baseCurrency)
         }
         s.append(NSAttributedString(string: text, attributes: valueAttr))
         return s

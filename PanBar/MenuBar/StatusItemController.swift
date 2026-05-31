@@ -19,6 +19,7 @@ final class StatusItemController {
     private var screenSharingMonitor: ScreenSharingMonitor?
     private var privacyHidden: Bool = false
     private var currentMode: TickerDisplayMode = .scroll
+    private var lockedPopoverLength: CGFloat?
 
     init(
         refresher: QuoteRefresher,
@@ -54,15 +55,33 @@ final class StatusItemController {
         }
 
         configure()
+        popoverController.onClose = { [weak self] in
+            self?.unlockPopoverLength()
+        }
         applyPrefs()
         bind()
     }
 
     private func applyPrefs() {
-        renderer = TickerRenderer(scheme: prefs.colorScheme)
+        renderer = TickerRenderer(
+            scheme: prefs.colorScheme,
+            showsQuoteCode: prefs.showQuoteCode,
+            showsQuoteName: prefs.showQuoteName
+        )
         // mode 变化:整个 view 都要换
         if prefs.displayMode != currentMode {
             swapTickerView(to: prefs.displayMode)
+        }
+        tickerView.showsIcon = prefs.showAppIcon
+        switch prefs.displayMode {
+        case .scroll, .scrollNoCode:
+            tickerView.preferredTotalWidth = prefs.scrollAutoWidth ? nil : CGFloat(prefs.scrollMenuBarWidth)
+        case .carousel:
+            tickerView.preferredTotalWidth = prefs.carouselAutoWidth ? nil : CGFloat(prefs.carouselMenuBarWidth)
+        case .compact:
+            tickerView.preferredTotalWidth = prefs.compactAutoWidth ? nil : CGFloat(prefs.compactMenuBarWidth)
+        case .minimal:
+            tickerView.preferredTotalWidth = nil
         }
         // 各模式独立配置
         if let scroll = tickerView as? TickerView {
@@ -75,6 +94,7 @@ final class StatusItemController {
         }
         if let compact = tickerView as? CompactTickerView {
             compact.scheme = prefs.colorScheme
+            compact.showsDirectionArrow = prefs.showDirectionArrow
         }
         if let minimal = tickerView as? MinimalTickerView {
             minimal.scheme = prefs.colorScheme
@@ -88,7 +108,7 @@ final class StatusItemController {
     private static func makeView(for mode: TickerDisplayMode, scheme: TickerColorScheme) -> MenuBarTickerView {
         let frame = NSRect(x: 0, y: 0, width: 200, height: 22)
         switch mode {
-        case .scroll:
+        case .scroll, .scrollNoCode:
             return TickerView(frame: frame)
         case .carousel:
             return CarouselTickerView(frame: frame)
@@ -107,6 +127,7 @@ final class StatusItemController {
     /// 通过 onContentChanged 回调把渲染好的 NSImage 设给 button.image。
     private func swapTickerView(to mode: TickerDisplayMode) {
         tickerView.onContentChanged = nil
+        tickerView.invalidateAnimation()
         tickerView = Self.makeView(for: mode, scheme: prefs.colorScheme)
         wireUpTickerView()
         currentMode = mode
@@ -154,29 +175,31 @@ final class StatusItemController {
         let image = tickerView.renderImage()
         button.image = image
         button.imagePosition = .imageOnly
-        statusItem.length = tickerView.totalWidth
+        statusItem.length = lockedPopoverLength ?? tickerView.totalWidth
+    }
+
+    private func lockPopoverLength() {
+        guard lockedPopoverLength == nil else { return }
+        lockedPopoverLength = max(40, statusItem.length, tickerView.totalWidth)
+        statusItem.length = lockedPopoverLength ?? tickerView.totalWidth
+    }
+
+    private func unlockPopoverLength() {
+        guard lockedPopoverLength != nil else { return }
+        lockedPopoverLength = nil
+        refreshButtonImage()
     }
 
     /// 各模式根据当前数据自己组装,写回到 statusItem.length。
     private func render(quotes: [SymbolID: Quote]) {
         switch currentMode {
-        case .scroll:
+        case .scroll, .scrollNoCode:
             guard let view = tickerView as? TickerView else { return }
             let items = buildTickerItems(quotes: quotes)
             view.update(attributed: renderer.render(items: items))
         case .carousel:
             guard let view = tickerView as? CarouselTickerView else { return }
-            // 汇总用 compact 简写格式拼成一条(「今 +¥8194  累 -¥29.6万  总 ¥64.9万」),
-            // 个股 / 指数各自单条。这样首屏看到的是简写总览,后续轮播看个股。
-            var slots: [NSAttributedString] = []
-            if let summary = buildCompactSummaryString() {
-                slots.append(summary)
-            }
-            let lineItems = buildLineItems(quotes: quotes)
-            for it in lineItems {
-                slots.append(renderer.render(items: [it]))
-            }
-            view.update(items: slots)
+            view.update(items: buildCarouselAttributedItems(quotes: quotes))
         case .compact:
             guard let view = tickerView as? CompactTickerView else { return }
             let snap = refresher.snapshot
@@ -192,7 +215,7 @@ final class StatusItemController {
             let snap = refresher.snapshot
             view.update(content: minimalContent(snap: snap, metric: prefs.minimalMetric))
         }
-        statusItem.length = tickerView.totalWidth
+        statusItem.length = lockedPopoverLength ?? tickerView.totalWidth
     }
 
     private func minimalContent(snap: PortfolioSnapshot, metric: MinimalMetric) -> MinimalTickerView.Content? {
@@ -354,6 +377,19 @@ final class StatusItemController {
         }
     }
 
+    /// Carousel 模式:汇总拼成一条,个股 / 指数各自单条。
+    private func buildCarouselAttributedItems(quotes: [SymbolID: Quote]) -> [NSAttributedString] {
+        var slots: [NSAttributedString] = []
+        if let summary = buildCompactSummaryString() {
+            slots.append(summary)
+        }
+        let lineItems = buildLineItems(quotes: quotes)
+        for it in lineItems {
+            slots.append(renderer.render(items: [it]))
+        }
+        return slots
+    }
+
     /// 把 quotes / snapshot / 偏好聚合成 [TickerItem],scroll / carousel 共用。
     /// compact / minimal 直接从 snapshot 拿数字,不走这里。
     private func buildTickerItems(quotes: [SymbolID: Quote]) -> [TickerItem] {
@@ -367,19 +403,19 @@ final class StatusItemController {
                 String(format: " (%+.2f%%)", snap.todayPnLPct * 100)
             items.append(.summary(label: L("summary.today", comment: ""), value: value, direction: dir))
         }
-        if prefs.showTotalAssets {
-            items.append(.summary(
-                label: L("summary.totalAssets", comment: ""),
-                value: snap.baseCurrency.format(snap.totalAssets),
-                direction: .neutral
-            ))
-        }
         if prefs.showAllTimePnL {
             let dir: TickerDirection = snap.allTimePnL > 0 ? .up : (snap.allTimePnL < 0 ? .down : .neutral)
             let sign = snap.allTimePnL >= 0 ? "+" : "-"
             let value = sign + snap.baseCurrency.format(snap.allTimePnL.magnitude) +
                 String(format: " (%+.2f%%)", snap.allTimePnLPct * 100)
             items.append(.summary(label: L("summary.allTime", comment: ""), value: value, direction: dir))
+        }
+        if prefs.showTotalAssets {
+            items.append(.summary(
+                label: L("summary.totalAssets", comment: ""),
+                value: snap.baseCurrency.format(snap.totalAssets),
+                direction: .neutral
+            ))
         }
 
         let enabledIDs = prefs.tickerIndexIDs
@@ -448,6 +484,7 @@ final class StatusItemController {
         if popoverController.isShown {
             popoverController.close()
         } else {
+            lockPopoverLength()
             popoverController.show(relativeTo: button)
         }
     }
@@ -468,6 +505,7 @@ final class StatusItemController {
 
     @objc private func showPopover() {
         guard let button = statusItem.button else { return }
+        lockPopoverLength()
         popoverController.show(relativeTo: button)
     }
 
