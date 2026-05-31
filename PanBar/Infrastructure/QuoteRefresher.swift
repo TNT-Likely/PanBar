@@ -224,32 +224,33 @@ final class QuoteRefresher: ObservableObject {
     }
 
     private func tick() async {
-        await MainActor.run { self.isRefreshing = true }
+        guard !isRefreshing else { return }
+        isRefreshing = true
+        defer { isRefreshing = false }
+
         do {
             let snap = try await service.computeSnapshot()
-            // 网络空响应(provider.fetch 失败 -> quotes 空)时,不要拿一个全 nil quote 的
-            // snapshot 去覆盖磁盘 seed 的好数据;原样保留 cached snapshot,等下次 tick。
             let hasFreshData = !snap.allQuotes.isEmpty
-            await MainActor.run {
-                if hasFreshData {
-                    self.snapshot = snap
-                    self.snapshotIsFromCache = false
-                    self.quotes.merge(snap.allQuotes) { _, new in new }
-                    self.lastUpdated = Date()
-                    self.lastError = nil
-                    self.alertEngine?.evaluate(quotes: self.quotes)
+            let isEmptyPortfolio = snap.positions.isEmpty && snap.allQuotes.isEmpty
+            if hasFreshData || isEmptyPortfolio {
+                snapshot = snap
+                snapshotIsFromCache = false
+                if isEmptyPortfolio {
+                    quotes = [:]
+                } else {
+                    quotes.merge(snap.allQuotes) { _, new in new }
                 }
+                lastUpdated = Date()
+                lastError = nil
+                alertEngine?.evaluate(quotes: quotes)
             }
             // 拉到了就异步写盘,下次冷启动可以秒读
             if hasFreshData {
                 quoteCacheRepo?.upsertMany(snap.allQuotes)
             }
         } catch {
-            await MainActor.run {
-                self.lastError = String(describing: error)
-            }
+            lastError = String(describing: error)
             Log.quote.error("refresh failed: \(String(describing: error), privacy: .public)")
         }
-        await MainActor.run { self.isRefreshing = false }
     }
 }

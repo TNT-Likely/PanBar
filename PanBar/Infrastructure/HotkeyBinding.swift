@@ -84,24 +84,25 @@ struct HotkeyBinding: Codable, Equatable, Sendable {
         guard let source = TISCopyCurrentASCIICapableKeyboardLayoutInputSource()?.takeRetainedValue() else { return nil }
         guard let layoutData = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData) else { return nil }
         let dataRef = unsafeBitCast(layoutData, to: CFData.self)
-        let layoutPtr = CFDataGetBytePtr(dataRef)!
-        let keyLayout = unsafeBitCast(layoutPtr, to: UnsafePointer<UCKeyboardLayout>.self)
+        guard let layoutPtr = CFDataGetBytePtr(dataRef) else { return nil }
 
         var deadKeyState: UInt32 = 0
         var actualLength = 0
         var chars: [UniChar] = Array(repeating: 0, count: 4)
-        let status = UCKeyTranslate(
-            keyLayout,
-            keyCode,
-            UInt16(kUCKeyActionDisplay),
-            0,
-            UInt32(LMGetKbdType()),
-            UInt32(kUCKeyTranslateNoDeadKeysBit),
-            &deadKeyState,
-            chars.count,
-            &actualLength,
-            &chars
-        )
+        let status = layoutPtr.withMemoryRebound(to: UCKeyboardLayout.self, capacity: 1) { keyLayout in
+            UCKeyTranslate(
+                keyLayout,
+                keyCode,
+                UInt16(kUCKeyActionDisplay),
+                0,
+                UInt32(LMGetKbdType()),
+                UInt32(kUCKeyTranslateNoDeadKeysBit),
+                &deadKeyState,
+                chars.count,
+                &actualLength,
+                &chars
+            )
+        }
         guard status == noErr, actualLength > 0 else { return nil }
         return String(utf16CodeUnits: chars, count: actualLength)
     }

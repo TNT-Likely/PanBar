@@ -50,11 +50,11 @@ final class Updater: NSObject, ObservableObject {
             }
             do {
                 let release = try await self.fetchLatestRelease()
-                await self.handleResult(release: release, silent: silent)
+                self.handleResult(release: release, silent: silent)
             } catch {
                 Log.app.warning("update check failed: \(String(describing: error), privacy: .public)")
                 if !silent {
-                    await self.showError(error)
+                    self.showError(error)
                 }
             }
         }

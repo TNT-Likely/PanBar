@@ -36,7 +36,9 @@ actor PortfolioService {
         if allSymbols.isEmpty {
             quotes = [:]
         } else {
-            quotes = (try? await provider.fetch(Array(allSymbols))) ?? [:]
+            let fetched = try await provider.fetch(Array(allSymbols))
+            guard !fetched.isEmpty else { throw ProviderError.empty }
+            quotes = fetched
         }
 
         let converter = await fx.currentConverter()
