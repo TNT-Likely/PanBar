@@ -1,5 +1,46 @@
 import SwiftUI
 
+private struct PortfolioColumnWidths {
+    let horizontalPadding: CGFloat = 10
+    let spacing: CGFloat = 8
+    let drag: CGFloat = 18
+    let symbol: CGFloat = 62
+    let market: CGFloat = 34
+    let actions: CGFloat = 44
+    let name: CGFloat
+    let quantity: CGFloat
+    let cost: CGFloat
+    let contentWidth: CGFloat
+
+    init(totalWidth: CGFloat, holdings: [Holding], nameHeader: String) {
+        let quantityBase: CGFloat = 48
+        let costBase: CGFloat = 76
+        name = ([nameHeader] + holdings.map(\.name))
+            .map(Self.measuredNameWidth)
+            .max() ?? Self.measuredNameWidth(nameHeader)
+
+        let fixedWidth = horizontalPadding * 2
+            + spacing * 6
+            + drag
+            + symbol
+            + name
+            + market
+            + actions
+        let flexibleBase = quantityBase + costBase
+        let extraWidth = max(0, totalWidth - fixedWidth - flexibleBase)
+
+        quantity = quantityBase + extraWidth / 2
+        cost = costBase + extraWidth / 2
+        contentWidth = fixedWidth + flexibleBase + extraWidth
+    }
+
+    private static func measuredNameWidth(_ value: String) -> CGFloat {
+        let font = NSFont.systemFont(ofSize: 13)
+        let width = (value as NSString).size(withAttributes: [.font: font]).width
+        return ceil(width) + 8
+    }
+}
+
 struct PortfolioPane: View {
     @Environment(\.container) private var container
     @State private var holdings: [Holding] = []
@@ -93,64 +134,82 @@ struct PortfolioPane: View {
     /// 拖拽:.draggable(行 ID)+ .dropDestination(整行作为放置目标)。
     /// 选中:单击置 selectedID,改背景色。
     private var holdingsList: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
-                Text("").frame(width: 18)
-                Text(L("col.symbol", comment: "")).frame(width: 70, alignment: .leading)
-                Text(L("col.name", comment: "")).frame(minWidth: 100, maxWidth: .infinity, alignment: .leading)
-                Text(L("col.market", comment: "")).frame(width: 56, alignment: .leading)
-                Text(L("col.qty", comment: "")).frame(width: 70, alignment: .trailing)
-                Text(L("col.cost", comment: "")).frame(width: 100, alignment: .trailing)
-                Spacer().frame(width: 56)
-            }
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundColor(.secondary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color.secondary.opacity(0.08))
+        GeometryReader { proxy in
+            let nameHeader = L("col.name", comment: "")
+            let columns = PortfolioColumnWidths(totalWidth: proxy.size.width, holdings: holdings, nameHeader: nameHeader)
 
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(Array(holdings.enumerated()), id: \.element.id) { index, h in
-                        holdingRow(h, index: index, isAlternate: index.isMultiple(of: 2))
+            ScrollView(.horizontal) {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: columns.spacing) {
+                        Text("").frame(width: columns.drag)
+                        Text(L("col.symbol", comment: "")).frame(width: columns.symbol, alignment: .leading)
+                        Text(nameHeader).frame(width: columns.name, alignment: .leading)
+                        Text(L("col.market", comment: "")).frame(width: columns.market, alignment: .leading)
+                        Text(L("col.qty", comment: "")).frame(width: columns.quantity, alignment: .center)
+                        Text(L("col.cost", comment: "")).frame(width: columns.cost, alignment: .center)
+                        Text("").frame(width: columns.actions)
                     }
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, columns.horizontalPadding)
+                    .padding(.vertical, 6)
+                    .background(Color.secondary.opacity(0.08))
+
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(Array(holdings.enumerated()), id: \.element.id) { index, h in
+                                holdingRow(h, index: index, isAlternate: index.isMultiple(of: 2), columns: columns)
+                            }
+                        }
+                    }
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                    )
                 }
+                .frame(width: columns.contentWidth, height: proxy.size.height, alignment: .topLeading)
             }
-            .background(Color(NSColor.controlBackgroundColor))
-            .overlay(
-                RoundedRectangle(cornerRadius: 4)
-                    .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-            )
+            .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
+            .clipped()
         }
+        .frame(minHeight: 260)
     }
 
     @ViewBuilder
-    private func holdingRow(_ h: Holding, index: Int, isAlternate: Bool) -> some View {
+    private func holdingRow(_ h: Holding, index: Int, isAlternate: Bool, columns: PortfolioColumnWidths) -> some View {
         let isSelected = selectedID == h.id
         let isDropTarget = dropTargetID == h.id
 
-        HStack(spacing: 8) {
+        HStack(spacing: columns.spacing) {
             Image(systemName: "line.3.horizontal")
                 .font(.system(size: 11))
                 .foregroundColor(.secondary.opacity(0.55))
-                .frame(width: 18)
+                .frame(width: columns.drag)
                 .help(L("action.dragToReorder", comment: ""))
             Text(h.symbol.market == .us ? h.symbol.code.uppercased() : h.symbol.code)
                 .monospacedDigit()
-                .frame(width: 70, alignment: .leading)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .frame(width: columns.symbol, alignment: .leading)
             Text(h.name)
                 .lineLimit(1)
                 .truncationMode(.tail)
-                .frame(minWidth: 100, maxWidth: .infinity, alignment: .leading)
+                .frame(width: columns.name, alignment: .leading)
             Text(h.symbol.market.displayName)
-                .frame(width: 56, alignment: .leading)
+                .lineLimit(1)
+                .frame(width: columns.market, alignment: .leading)
                 .foregroundColor(.secondary)
-            Text("\(h.quantity)")
+            Text(NSDecimalNumber(decimal: h.quantity).stringValue)
                 .monospacedDigit()
-                .frame(width: 70, alignment: .trailing)
-            Text(h.currency.format(h.costPrice))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(width: columns.quantity, alignment: .center)
+            Text(h.currency.format(h.costPrice, fractionDigits: 3))
                 .monospacedDigit()
-                .frame(width: 100, alignment: .trailing)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .frame(width: columns.cost, alignment: .center)
             HStack(spacing: 4) {
                 Button { editing = h } label: {
                     Image(systemName: "pencil")
@@ -164,9 +223,9 @@ struct PortfolioPane: View {
                 }
                 .buttonStyle(.borderless)
             }
-            .frame(width: 56)
+            .frame(width: columns.actions)
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, columns.horizontalPadding)
         .padding(.vertical, 6)
         .background(rowBackground(isSelected: isSelected, isAlternate: isAlternate))
         .overlay(alignment: .top) {

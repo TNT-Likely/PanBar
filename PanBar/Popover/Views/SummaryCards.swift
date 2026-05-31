@@ -14,18 +14,18 @@ struct SummaryCards: View {
                 featured: false
             )
             card(
-                label: L("summary.totalAssets", comment: ""),
-                value: snapshot.baseCurrency.format(snapshot.totalAssets),
-                sub: "\(snapshot.baseCurrency.rawValue) · " + String(format: L("summary.positions", comment: ""), snapshot.positions.count),
-                tone: .neutral,
-                featured: true
-            )
-            card(
                 label: L("summary.allTime", comment: ""),
                 value: signed(snapshot.allTimePnL, currency: snapshot.baseCurrency),
                 sub: pct(snapshot.allTimePnLPct),
                 tone: tone(for: snapshot.allTimePnL),
                 featured: false
+            )
+            card(
+                label: L("summary.totalAssets", comment: ""),
+                value: snapshot.baseCurrency.format(snapshot.totalAssets),
+                sub: "\(snapshot.baseCurrency.rawValue) · " + String(format: L("summary.positions", comment: ""), snapshot.positions.count),
+                tone: .neutral,
+                featured: true
             )
         }
     }
