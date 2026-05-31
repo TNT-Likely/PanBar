@@ -157,11 +157,11 @@ private struct HoldingRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 4) {
                     Text(displayCode(holding.symbol))
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 11))
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
                     Text(holding.name)
-                        .font(.system(size: 11))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                         .truncationMode(.tail)
