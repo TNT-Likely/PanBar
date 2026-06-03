@@ -26,7 +26,7 @@ struct DebugPane: View {
             }
 
             Section(header: Text("数据").font(.headline)) {
-                Button("生成示例数据(7 只持仓 · 覆盖各市场 + 3 只自选 + 2 条预警)") {
+                Button("生成示例数据(9 只持仓 · 覆盖各市场+ETF/LOF + 3 只自选 + 2 条预警)") {
                     seedSampleData(container: container)
                 }
                 Button("清空持仓") { clear(container: container, kinds: [.holdings]) }
@@ -100,17 +100,21 @@ struct DebugPane: View {
         try? container.watchlistRepo.deleteAll()
         try? container.alertsRepo.deleteAll()
 
-        // 持仓:务必覆盖「每一个市场 / A 股每个板块」,验证多市场 / 多币种 /
-        // 行情路由(沪 60·68 → sh,深 00·30 → sz)/ 搜索分类 / 排序。
-        // 沪主板 60 + 深主板 00 + 创业板 30 + 科创板 68 + 港股 + 美股,缺一不可。
+        // 持仓:务必覆盖「每一个市场 / A 股每个板块 / 主要品种」,验证多市场 /
+        // 多币种 / 行情路由(沪 60·68·51 → sh,深 00·30·16 → sz)/ 搜索分类 / 排序。
+        // 沪主板 60 + 深主板 00 + 创业板 30 + 科创板 68 + 沪ETF 51 + 深LOF 16 + 港股 + 美股。
+        // (北交所 43/83/87/88/92:SymbolEncoder 明确不支持,不 seed;
+        //  可转债:代码随赎回频繁退市、smartbox 也搜不到稳定个券,不适合写死。)
         let holdings: [Holding] = [
-            Holding(symbol: SymbolID(code: "600519", market: .a),  name: "贵州茅台",   quantity: 100,  costPrice: 1300, currency: .cny, sortOrder: 0),  // 沪市主板
-            Holding(symbol: SymbolID(code: "000001", market: .a),  name: "平安银行",   quantity: 2000, costPrice: 11,   currency: .cny, sortOrder: 1),  // 深市主板
-            Holding(symbol: SymbolID(code: "300750", market: .a),  name: "宁德时代",   quantity: 200,  costPrice: 180,  currency: .cny, sortOrder: 2),  // 创业板
-            Holding(symbol: SymbolID(code: "688256", market: .a),  name: "寒武纪",     quantity: 50,   costPrice: 600,  currency: .cny, sortOrder: 3),  // 科创板
-            Holding(symbol: SymbolID(code: "09988",  market: .hk), name: "阿里巴巴-W", quantity: 1000, costPrice: 150,  currency: .hkd, sortOrder: 4),  // 港股
-            Holding(symbol: SymbolID(code: "LI",     market: .us), name: "理想汽车",   quantity: 1000, costPrice: 5,    currency: .usd, sortOrder: 5),  // 美股
-            Holding(symbol: SymbolID(code: "NVDA",   market: .us), name: "英伟达",     quantity: 200,  costPrice: 200,  currency: .usd, sortOrder: 6)   // 美股
+            Holding(symbol: SymbolID(code: "600519", market: .a),  name: "贵州茅台",     quantity: 100,  costPrice: 1300, currency: .cny, sortOrder: 0),  // 沪市主板
+            Holding(symbol: SymbolID(code: "000001", market: .a),  name: "平安银行",     quantity: 2000, costPrice: 11,   currency: .cny, sortOrder: 1),  // 深市主板
+            Holding(symbol: SymbolID(code: "300750", market: .a),  name: "宁德时代",     quantity: 200,  costPrice: 180,  currency: .cny, sortOrder: 2),  // 创业板
+            Holding(symbol: SymbolID(code: "688256", market: .a),  name: "寒武纪",       quantity: 50,   costPrice: 600,  currency: .cny, sortOrder: 3),  // 科创板
+            Holding(symbol: SymbolID(code: "510300", market: .a),  name: "沪深300ETF",  quantity: 5000, costPrice: 3.8,  currency: .cny, sortOrder: 4),  // ETF(沪市 51→sh)
+            Holding(symbol: SymbolID(code: "161725", market: .a),  name: "白酒基金LOF", quantity: 3000, costPrice: 1.0,  currency: .cny, sortOrder: 5),  // LOF(深市基金 16→sz)
+            Holding(symbol: SymbolID(code: "09988",  market: .hk), name: "阿里巴巴-W",   quantity: 1000, costPrice: 150,  currency: .hkd, sortOrder: 6),  // 港股
+            Holding(symbol: SymbolID(code: "LI",     market: .us), name: "理想汽车",     quantity: 1000, costPrice: 5,    currency: .usd, sortOrder: 7),  // 美股
+            Holding(symbol: SymbolID(code: "NVDA",   market: .us), name: "英伟达",       quantity: 200,  costPrice: 200,  currency: .usd, sortOrder: 8)   // 美股
         ]
         for h in holdings { try? container.holdingsRepo.upsert(h) }
 
@@ -130,7 +134,7 @@ struct DebugPane: View {
         for a in alerts { try? container.alertsRepo.upsert(a) }
 
         container.refresher.refreshNow()
-        lastMessage = "✓ 已生成示例:7 只持仓(沪/深主板·创业板·科创板·港股·美股)+ 3 只自选 + 2 条预警"
+        lastMessage = "✓ 已生成示例:9 只持仓(沪/深主板·创业板·科创板·ETF·LOF·港股·美股)+ 3 只自选 + 2 条预警"
     }
 
     private func openDataFolderInFinder() {
