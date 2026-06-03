@@ -35,6 +35,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // 单元测试以本 app 为宿主。测试启动时跳过完整 bootstrap(状态栏 / DB /
+        // 网络 / 通知授权 / 全局热键 / onboarding),让测试 bundle 注入后只跑纯逻辑,
+        // 避免副作用污染测试或造成 flaky。XCTest 运行时会注入该环境变量。
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil { return }
+
         // 语言覆盖必须在容器构建前生效,容器里就会触发 L() 加载本地化串
         applyLanguageOverride()
 

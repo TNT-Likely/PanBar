@@ -51,6 +51,9 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_PREVIEWS: YES
+        # Swift 模块名固定为 PanBar(否则 Debug 下随 PRODUCT_NAME=PanBar-Dev 变成
+        # PanBar_Dev,测试 target 的 `@testable import PanBar` 会找不到模块)。
+        PRODUCT_MODULE_NAME: PanBar
         # 默认版本号。CI 通过 `xcodebuild MARKETING_VERSION=x.y.z CURRENT_PROJECT_VERSION=NNN` 覆盖。
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
@@ -70,11 +73,37 @@ targets:
     dependencies:
       - package: GRDB
 
+  PanBarTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: PanBarTests
+    dependencies:
+      - target: PanBar
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: app.panbar.PanBarTests
+        SWIFT_VERSION: "5.0"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+      configs:
+        # 宿主 app 在 Debug/Release 用不同 PRODUCT_NAME(PanBar-Dev / PanBar),
+        # TEST_HOST 必须按配置指到对应可执行文件,否则报 host not found。
+        Debug:
+          TEST_HOST: "$(BUILT_PRODUCTS_DIR)/PanBar-Dev.app/Contents/MacOS/PanBar-Dev"
+        Release:
+          TEST_HOST: "$(BUILT_PRODUCTS_DIR)/PanBar.app/Contents/MacOS/PanBar"
+
 schemes:
   PanBar:
     build:
       targets:
         PanBar: all
+        PanBarTests: [test]
+    test:
+      config: Debug
+      targets:
+        - PanBarTests
     run:
       config: Debug
     archive:
