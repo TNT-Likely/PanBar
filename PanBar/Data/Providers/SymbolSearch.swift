@@ -32,13 +32,17 @@ struct SymbolSearchResult: Identifiable, Equatable, Hashable, Sendable {
 final class SymbolSearch: Sendable {
     let http: HTTPClient
 
-    /// 允许的类型:股票(GP*) + 基金 / ETF / LOF / 可转债。
-    /// 腾讯 smartbox 返回的 type 字段可能是 GP / GP-A / GP-B / ETF / LOF / JJ / ZQ 等;
-    /// 过滤掉 ZS(指数,在大盘里展示)/ QZ(权证)就够了。
-    private static let allowedTypes: Set<String> = [
-        "GP", "GP-A", "GP-B",
-        "ETF", "LOF", "JJ", "ZQ",
-    ]
+    /// 允许的「非股票」类型:基金 / ETF / LOF / 可转债。
+    private static let allowedFundTypes: Set<String> = ["ETF", "LOF", "JJ", "ZQ"]
+
+    /// 是否保留该 type。
+    /// 股票类用 "GP" 前缀匹配:腾讯对不同板块返回不同后缀(主板 / 创业板 GP-A、
+    /// B 股 GP-B、科创板 GP-A-KCB 等),写死全集会漏掉子类型 —— 科创板的
+    /// GP-A-KCB 此前就不在白名单里,导致寒武纪(688256)等整个科创板搜不到。
+    /// 过滤掉 ZS(指数,大盘里展示)/ QZ(权证)/ KJ(场外基金,无实时行情)等。
+    private static func isAllowedType(_ type: String) -> Bool {
+        type.hasPrefix("GP") || allowedFundTypes.contains(type)
+    }
 
     init(http: HTTPClient = HTTPClient(defaultHeaders: ["Referer": "https://gu.qq.com/"])) {
         self.http = http
@@ -72,7 +76,7 @@ final class SymbolSearch: Sendable {
             let nameRaw = fields[2]
             let type = fields[4]
 
-            guard Self.allowedTypes.contains(type) else { continue }
+            guard Self.isAllowedType(type) else { continue }
             guard let sid = decodeSymbol(market: marketStr, rawCode: rawCode) else { continue }
             if !seen.insert(sid.storageKey).inserted { continue }
 
