@@ -127,9 +127,8 @@ final class StatusItemController {
         currentMode = mode
     }
 
-    /// NSTrackingArea 的 owner 必须是 NSObject + 响应 mouseEntered/Exited。
-    /// 我们用这个小 helper 把回调桥到 controller(StatusItemController 不是 NSObject)。
-    private let hoverProxy = HoverProxy()
+    /// 全局 + 本地 mouse-moved 监听器,用于判断鼠标是否悬停在状态栏 ticker 上。
+    private var mouseMovedMonitors: [Any] = []
 
     private func configure() {
         guard let button = statusItem.button else { return }
@@ -137,20 +136,41 @@ final class StatusItemController {
         button.target = self
         button.action = #selector(onClick(_:))
         button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-        // 在 button 上加 tracking area,把 hover 状态转给 view
-        // (view 不在 window 里,自己监听不到 mouseEntered/Exited)
-        hoverProxy.onEnter = { [weak self] in self?.tickerView.hovered = true }
-        hoverProxy.onExit  = { [weak self] in self?.tickerView.hovered = false }
-        let tracking = NSTrackingArea(
-            rect: button.bounds,
-            options: [.activeAlways, .mouseEnteredAndExited, .inVisibleRect],
-            owner: hoverProxy,
-            userInfo: nil
-        )
-        button.addTrackingArea(tracking)
+        // ticker 改为离屏渲染成 NSImage 贴到 button 上后(见 cbd3831),view 不在窗口
+        // 层级里,加在 button 上的 NSTrackingArea 实测收不到 mouseEntered/Exited,
+        // 导致 hover 暂停失效。改用 mouse-moved 监听 + 屏幕坐标判断,可靠得多。
+        startHoverTracking()
 
         wireUpTickerView()
         buildContextMenu()
+    }
+
+    /// 用全局 + 本地 mouse-moved 监听判断鼠标是否悬停在状态栏 ticker 上,写回
+    /// tickerView.hovered(滚动 / 轮播据此暂停)。鼠标移动的全局监听不需要辅助功能权限。
+    private func startHoverTracking() {
+        let onMove: (NSEvent) -> Void = { [weak self] _ in self?.updateHoverState() }
+        if let global = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved], handler: onMove) {
+            mouseMovedMonitors.append(global)
+        }
+        if let local = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved], handler: { [weak self] event in
+            self?.updateHoverState()
+            return event
+        }) {
+            mouseMovedMonitors.append(local)
+        }
+    }
+
+    private func updateHoverState() {
+        guard let button = statusItem.button, let window = button.window else { return }
+        let rectOnScreen = window.convertToScreen(button.convert(button.bounds, to: nil))
+        let isHovering = rectOnScreen.contains(NSEvent.mouseLocation)
+        if tickerView.hovered != isHovering {
+            tickerView.hovered = isHovering
+        }
+    }
+
+    deinit {
+        mouseMovedMonitors.forEach { NSEvent.removeMonitor($0) }
     }
 
     /// 把当前 tickerView 接到 button:订阅内容变化 → 渲染 NSImage → 写回 button.image。
