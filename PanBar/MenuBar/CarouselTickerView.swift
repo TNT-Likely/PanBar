@@ -25,8 +25,13 @@ final class CarouselTickerView: NSView {
     var showsIcon: Bool = true
     var visibleTextWidth: CGFloat = 200
     var privacyHidden: Bool = false
+    /// 没有任何可见内容时仍保留一点点击区域,但不显示占位文字。
+    private let emptyHitTargetWidth: CGFloat = 24
 
     var totalWidth: CGFloat {
+        if items.isEmpty {
+            return emptyHitTargetWidth
+        }
         if let preferredTotalWidth {
             return max(40, preferredTotalWidth)
         }

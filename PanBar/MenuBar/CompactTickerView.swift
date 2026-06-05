@@ -24,6 +24,8 @@ final class CompactTickerView: NSView {
     private let slotSpacing: CGFloat = 10
     private let labelFont = NSFont.systemFont(ofSize: 9, weight: .semibold)
     private let valueFont = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
+    /// 没有任何可见内容时仍保留一点点击区域,但不显示占位文字。
+    private let emptyHitTargetWidth: CGFloat = 24
 
     /// 估算的最长行宽,根据当前 slots 算出来。
     private var contentWidth: CGFloat {
@@ -38,10 +40,12 @@ final class CompactTickerView: NSView {
     }
 
     var totalWidth: CGFloat {
+        let width = contentWidth
+        guard width > 0 else { return emptyHitTargetWidth }
         if let preferredTotalWidth {
             return max(40, preferredTotalWidth)
         }
-        return iconWidth + 6 + max(60, contentWidth) + 4
+        return iconWidth + 6 + max(60, width) + 4
     }
 
     override var isFlipped: Bool { false }
@@ -104,7 +108,7 @@ final class CompactTickerView: NSView {
         if let pnl = slots.allTimePnL {
             out.append(piece(label: L("compact.label.allTime", comment: ""), value: pnl, direction: directionOf(pnl)))
         }
-        if let v = slots.totalAssets, v > 0 {
+        if let v = slots.totalAssets {
             out.append(piece(label: L("compact.label.total", comment: ""), value: v, direction: .neutral))
         }
         return out
