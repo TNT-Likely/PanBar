@@ -20,6 +20,8 @@ enum TickerDirection {
 struct TickerRenderer {
     var scheme: TickerColorScheme = .east
     var font: NSFont = NSFont.menuBarFont(ofSize: 0)
+    var showsQuoteCode: Bool = true
+    var showsQuoteName: Bool = true
 
     /// 涨色 / 跌色:走 SemanticColors,与 Popover 保持一致 + 菜单栏对比度优化。
     private var upColor: NSColor { SemanticColors.upNS(scheme: scheme) }
@@ -137,8 +139,10 @@ struct TickerRenderer {
         let name = shortenedName(q.name, market: q.symbol.market)
 
         let s = NSMutableAttributedString()
-        s.append(NSAttributedString(string: display + " ", attributes: symbolAttr))
-        if !name.isEmpty {
+        if showsQuoteCode {
+            s.append(NSAttributedString(string: display + " ", attributes: symbolAttr))
+        }
+        if showsQuoteName && !name.isEmpty {
             s.append(NSAttributedString(string: name + " ", attributes: nameAttr))
         }
         s.append(NSAttributedString(string: formatPrice(q.price) + " ", attributes: valueAttr))

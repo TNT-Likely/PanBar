@@ -22,6 +22,7 @@ final class CarouselTickerView: NSView {
 
     let iconWidth: CGFloat = 18
     var preferredTotalWidth: CGFloat?
+    var showsIcon: Bool = true
     var visibleTextWidth: CGFloat = 200
     var privacyHidden: Bool = false
 
@@ -29,7 +30,11 @@ final class CarouselTickerView: NSView {
         if let preferredTotalWidth {
             return max(40, preferredTotalWidth)
         }
-        return iconWidth + 6 + visibleTextWidth + 4
+        return leadingTextX + visibleTextWidth + 4
+    }
+
+    private var leadingTextX: CGFloat {
+        showsIcon ? iconWidth + 6 : 2
     }
 
     override var isFlipped: Bool { false }
@@ -127,12 +132,14 @@ final class CarouselTickerView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        drawIcon(in: NSRect(x: 2, y: (bounds.height - iconWidth) / 2, width: iconWidth, height: iconWidth))
+        if showsIcon {
+            drawIcon(in: NSRect(x: 2, y: (bounds.height - iconWidth) / 2, width: iconWidth, height: iconWidth))
+        }
 
         let textRect = NSRect(
-            x: iconWidth + 6,
+            x: leadingTextX,
             y: 0,
-            width: max(20, totalWidth - iconWidth - 10),
+            width: max(20, totalWidth - leadingTextX - 4),
             height: bounds.height
         )
 

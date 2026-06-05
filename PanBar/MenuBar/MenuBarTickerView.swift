@@ -10,6 +10,7 @@ protocol MenuBarTickerView: NSView {
     var totalWidth: CGFloat { get }
     var privacyHidden: Bool { get set }
     var preferredTotalWidth: CGFloat? { get set }
+    var showsIcon: Bool { get set }
     /// 鼠标 hover 状态;由 controller 监听 button 的 tracking area 同步过来
     var hovered: Bool { get set }
     /// 内容变化通知(动画帧 / 数据更新),controller 重新捕图。

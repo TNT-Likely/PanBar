@@ -14,11 +14,13 @@ final class CompactTickerView: NSView {
     var scheme: TickerColorScheme = .east
     var privacyHidden: Bool = false
     var preferredTotalWidth: CGFloat?
+    var showsIcon: Bool = true
     /// hover 状态(放着满足协议,固定模式实际用不到)
     var hovered: Bool = false
     var onContentChanged: (() -> Void)?
 
-    let iconWidth: CGFloat = 18
+    private let visibleIconWidth: CGFloat = 18
+    var iconWidth: CGFloat { showsIcon ? visibleIconWidth : -4 }
     private let slotSpacing: CGFloat = 10
     private let labelFont = NSFont.systemFont(ofSize: 9, weight: .semibold)
     private let valueFont = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .semibold)
@@ -68,14 +70,16 @@ final class CompactTickerView: NSView {
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        drawIcon(in: NSRect(x: 2, y: (bounds.height - iconWidth) / 2, width: iconWidth, height: iconWidth))
+        if showsIcon {
+            drawIcon(in: NSRect(x: 2, y: (bounds.height - visibleIconWidth) / 2, width: visibleIconWidth, height: visibleIconWidth))
+        }
 
         if privacyHidden {
             let dots = NSAttributedString(string: "•••", attributes: [
                 .font: valueFont,
                 .foregroundColor: NSColor.secondaryLabelColor
             ])
-            dots.draw(at: NSPoint(x: iconWidth + 8, y: bounds.midY - dots.size().height / 2))
+            dots.draw(at: NSPoint(x: iconWidth + 10, y: bounds.midY - dots.size().height / 2))
             return
         }
 

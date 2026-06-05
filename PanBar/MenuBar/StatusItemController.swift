@@ -63,7 +63,11 @@ final class StatusItemController {
     }
 
     private func applyPrefs() {
-        renderer = TickerRenderer(scheme: prefs.colorScheme)
+        renderer = TickerRenderer(
+            scheme: prefs.colorScheme,
+            showsQuoteCode: prefs.showQuoteCode,
+            showsQuoteName: prefs.showQuoteName
+        )
         // mode 变化:整个 view 都要换
         if prefs.displayMode != currentMode {
             swapTickerView(to: prefs.displayMode)
@@ -77,7 +81,10 @@ final class StatusItemController {
             tickerView.preferredTotalWidth = prefs.compactAutoWidth ? nil : CGFloat(prefs.compactMenuBarWidth)
         case .minimal:
             tickerView.preferredTotalWidth = nil
+        case .scrollNoCode:
+            tickerView.preferredTotalWidth = prefs.scrollAutoWidth ? nil : CGFloat(prefs.scrollMenuBarWidth)
         }
+        tickerView.showsIcon = prefs.showAppIcon
         // 各模式独立配置
         if let scroll = tickerView as? TickerView {
             scroll.pixelsPerSecond = prefs.scrollSpeed.pixelsPerSecond
@@ -102,7 +109,7 @@ final class StatusItemController {
     private static func makeView(for mode: TickerDisplayMode, scheme: TickerColorScheme) -> MenuBarTickerView {
         let frame = NSRect(x: 0, y: 0, width: 200, height: 22)
         switch mode {
-        case .scroll:
+        case .scroll, .scrollNoCode:
             return TickerView(frame: frame)
         case .carousel:
             return CarouselTickerView(frame: frame)
@@ -207,7 +214,7 @@ final class StatusItemController {
     /// 各模式根据当前数据自己组装,写回到 statusItem.length。
     private func render(quotes: [SymbolID: Quote]) {
         switch currentMode {
-        case .scroll:
+        case .scroll, .scrollNoCode:
             guard let view = tickerView as? TickerView else { return }
             let items = buildTickerItems(quotes: quotes)
             view.update(attributed: renderer.render(items: items))

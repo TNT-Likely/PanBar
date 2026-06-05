@@ -554,6 +554,30 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "菜单栏宽度: %d pt" } }
       }
     },
+    "ticker.contentSection" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Display content" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示内容" } }
+      }
+    },
+    "ticker.showAppIcon" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show app icon" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示应用图标" } }
+      }
+    },
+    "ticker.showQuoteCode" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show quote code" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示代码" } }
+      }
+    },
+    "ticker.showQuoteName" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show quote name" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示名称" } }
+      }
+    },
     "ticker.summarySection" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Summary metrics" } },

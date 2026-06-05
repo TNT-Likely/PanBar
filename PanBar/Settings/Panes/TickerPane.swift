@@ -88,6 +88,14 @@ private struct TickerPaneContent: View {
                 }
             }
 
+            Section(header: Text(L("ticker.contentSection", comment: "")).font(.headline)) {
+                Toggle(L("ticker.showAppIcon", comment: ""), isOn: $prefs.showAppIcon)
+                if showsQuoteContentControls {
+                    Toggle(L("ticker.showQuoteCode", comment: ""), isOn: $prefs.showQuoteCode)
+                    Toggle(L("ticker.showQuoteName", comment: ""), isOn: $prefs.showQuoteName)
+                }
+            }
+
             Section(header: Text(L("ticker.summarySection", comment: "")).font(.headline)) {
                 Toggle(L("ticker.showTodayPnL", comment: ""), isOn: $prefs.showTodayPnL)
                 Toggle(L("ticker.showAllTimePnL", comment: ""), isOn: $prefs.showAllTimePnL)
@@ -165,10 +173,15 @@ private struct TickerPaneContent: View {
     private var displayModeHint: String {
         switch prefs.displayMode {
         case .scroll:   return L("displayMode.scroll.hint", comment: "")
+        case .scrollNoCode: return L("displayMode.scroll.hint", comment: "")
         case .carousel: return L("displayMode.carousel.hint", comment: "")
         case .compact:  return L("displayMode.compact.hint", comment: "")
         case .minimal:  return L("displayMode.minimal.hint", comment: "")
         }
+    }
+
+    private var showsQuoteContentControls: Bool {
+        prefs.displayMode == .scroll || prefs.displayMode == .scrollNoCode || prefs.displayMode == .carousel
     }
 
     private func marketBadge(_ m: Market) -> some View {
