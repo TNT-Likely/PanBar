@@ -18,6 +18,7 @@ final class CompactTickerView: NSView {
     /// hover 状态(放着满足协议,固定模式实际用不到)
     var hovered: Bool = false
     var onContentChanged: (() -> Void)?
+    var showsDirectionArrow: Bool = false
 
     private let visibleIconWidth: CGFloat = 18
     var iconWidth: CGFloat { showsIcon ? visibleIconWidth : -4 }
@@ -137,8 +138,14 @@ final class CompactTickerView: NSView {
         if direction == .neutral {
             text = NumberAbbreviation.formatCurrency(value, currency: slots.baseCurrency)
         } else {
+            let arrow: String
+            if showsDirectionArrow {
+                arrow = direction == .up ? "↑ " : "↓ "
+            } else {
+                arrow = ""
+            }
             let sign = value < 0 ? "-" : "+"
-            text = sign + slots.baseCurrency.symbol + NumberAbbreviation.format(value, currency: slots.baseCurrency)
+            text = arrow + sign + slots.baseCurrency.symbol + NumberAbbreviation.format(value, currency: slots.baseCurrency)
         }
         s.append(NSAttributedString(string: text, attributes: valueAttr))
         return s

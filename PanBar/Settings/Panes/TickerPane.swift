@@ -23,7 +23,7 @@ private struct TickerPaneContent: View {
         Form {
             Section(header: Text(L("settings.ticker", comment: "")).font(.title3)) {
                 Picker(L("ticker.displayMode", comment: ""), selection: $prefs.displayMode) {
-                    ForEach(TickerDisplayMode.allCases) { m in
+                    ForEach(TickerDisplayMode.allCases.filter { $0 != .minimal }) { m in
                         Text(m.displayName).tag(m)
                     }
                 }
@@ -100,6 +100,9 @@ private struct TickerPaneContent: View {
                 Toggle(L("ticker.showTodayPnL", comment: ""), isOn: $prefs.showTodayPnL)
                 Toggle(L("ticker.showAllTimePnL", comment: ""), isOn: $prefs.showAllTimePnL)
                 Toggle(L("ticker.showTotalAssets", comment: ""), isOn: $prefs.showTotalAssets)
+                if prefs.displayMode == .compact || prefs.displayMode == .minimal {
+                    Toggle(L("ticker.showDirectionArrow", comment: ""), isOn: $prefs.showDirectionArrow)
+                }
                 Text(L("ticker.summaryHint", comment: ""))
                     .font(.caption)
                     .foregroundColor(.secondary)

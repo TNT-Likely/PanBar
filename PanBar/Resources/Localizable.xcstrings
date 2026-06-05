@@ -242,6 +242,12 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "总" } }
       }
     },
+    "ticker.showDirectionArrow" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show direction arrow" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示方向箭头" } }
+      }
+    },
     "update.available.title" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Update available — %@" } },

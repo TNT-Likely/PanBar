@@ -96,6 +96,7 @@ final class StatusItemController {
         }
         if let compact = tickerView as? CompactTickerView {
             compact.scheme = prefs.colorScheme
+            compact.showsDirectionArrow = prefs.showDirectionArrow
         }
         if let minimal = tickerView as? MinimalTickerView {
             minimal.scheme = prefs.colorScheme

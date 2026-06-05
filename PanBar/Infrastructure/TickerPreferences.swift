@@ -111,6 +111,9 @@ final class TickerPreferences: ObservableObject {
     @Published var carouselDwell: Int {
         didSet { try? repo.set(SettingsRepository.Keys.tickerCarouselDwell, "\(carouselDwell)") }
     }
+    @Published var showDirectionArrow: Bool {
+        didSet { try? repo.set(SettingsRepository.Keys.tickerShowDirectionArrow, showDirectionArrow ? "1" : "0") }
+    }
 
     private let repo: SettingsRepository
 
@@ -178,6 +181,27 @@ final class TickerPreferences: ObservableObject {
         self.scrollAutoWidth = repo.string(SettingsRepository.Keys.tickerScrollAutoWidth) == "1"
         self.carouselAutoWidth = repo.string(SettingsRepository.Keys.tickerCarouselAutoWidth) == "1"
         self.compactAutoWidth = repo.string(SettingsRepository.Keys.tickerCompactAutoWidth) != "0"
+        self.showDirectionArrow = repo.string(SettingsRepository.Keys.tickerShowDirectionArrow) == "1"
+        migrateMinimalModeIfNeeded()
+    }
+
+    private func migrateMinimalModeIfNeeded() {
+        guard displayMode == .minimal else { return }
+
+        let migratedShowTotalAssets = minimalMetric == .totalAssets
+        let migratedShowTodayPnL = minimalMetric == .todayPnL
+        let migratedShowAllTimePnL = minimalMetric == .allTimePnL
+        showTotalAssets = migratedShowTotalAssets
+        showTodayPnL = migratedShowTodayPnL
+        showAllTimePnL = migratedShowAllTimePnL
+        displayMode = .compact
+        showDirectionArrow = true
+
+        try? repo.set(SettingsRepository.Keys.tickerShowTotalAssets, migratedShowTotalAssets ? "1" : "0")
+        try? repo.set(SettingsRepository.Keys.tickerShowTodayPnL, migratedShowTodayPnL ? "1" : "0")
+        try? repo.set(SettingsRepository.Keys.tickerShowAllTimePnL, migratedShowAllTimePnL ? "1" : "0")
+        try? repo.set(SettingsRepository.Keys.tickerDisplayMode, TickerDisplayMode.compact.rawValue)
+        try? repo.set(SettingsRepository.Keys.tickerShowDirectionArrow, "1")
     }
 }
 
