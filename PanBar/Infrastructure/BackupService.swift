@@ -2,20 +2,6 @@ import Foundation
 import AppKit
 import UniformTypeIdentifiers
 
-/// 备份文件载荷:包含所有持仓 / 自选 / 预警 / 设置。
-struct BackupBundle: Codable {
-    let schemaVersion: Int
-    let exportedAt: Date
-    let appVersion: String
-    let holdings: [Holding]
-    let watchlist: [WatchItem]
-    let alerts: [Alert]
-    /// 全量 appSetting 表(包含语言、主题、配色、Provider Key、Hotkey 等所有 key-value)。
-    let settings: [String: String]
-
-    static let currentSchemaVersion: Int = 1
-}
-
 struct ImportSummary {
     let holdingsCount: Int
     let watchlistCount: Int
@@ -46,7 +32,8 @@ final class BackupService {
             holdings: holdings,
             watchlist: watchlist,
             alerts: alerts,
-            settings: settings
+            settings: settings,
+            groups: try container.groupsRepo.all()
         )
     }
 
@@ -69,15 +56,16 @@ final class BackupService {
     /// 调用方需先用 UI 弹窗确认。
     @discardableResult
     func applyReplace(_ bundle: BackupBundle) throws -> ImportSummary {
-        guard bundle.schemaVersion <= BackupBundle.currentSchemaVersion else {
-            throw BackupError.unsupportedSchema(bundle.schemaVersion)
-        }
+        try bundle.validate()
+        let groups = bundle.groups ?? []
 
         try container.holdingsRepo.deleteAll()
         try container.watchlistRepo.deleteAll()
         try container.alertsRepo.deleteAll()
+        try container.groupsRepo.deleteAll()
         try container.settingsRepo.replaceAll(bundle.settings)
 
+        for group in groups { try container.groupsRepo.upsert(group) }
         for h in bundle.holdings { try container.holdingsRepo.upsert(h) }
         for w in bundle.watchlist { try container.watchlistRepo.upsert(w) }
         for a in bundle.alerts { try container.alertsRepo.upsert(a) }
@@ -170,16 +158,5 @@ final class BackupService {
         alert.alertStyle = .critical
         alert.addButton(withTitle: L("action.ok", comment: ""))
         alert.runModal()
-    }
-}
-
-enum BackupError: Error, LocalizedError {
-    case unsupportedSchema(Int)
-
-    var errorDescription: String? {
-        switch self {
-        case .unsupportedSchema(let v):
-            return "Unsupported backup schema version: \(v)"
-        }
     }
 }

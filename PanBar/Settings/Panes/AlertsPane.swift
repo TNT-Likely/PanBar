@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AlertsPane: View {
     @Environment(\.container) private var container
+    @EnvironmentObject private var refresher: QuoteRefresher
     @ObservedObject private var notificationService = NotificationService.shared
     @State private var alerts: [Alert] = []
     @State private var showAdd: Bool = false
@@ -29,6 +30,12 @@ struct AlertsPane: View {
                     Text(a.symbol.market == .us ? a.symbol.code.uppercased() : a.symbol.code)
                         .contentShape(Rectangle())
                         .onTapGesture(count: 2) { editing = a }
+                }
+                TableColumn(L("alerts.currentPrice")) { (a: Alert) in
+                    let quote = refresher.quotes[a.symbol]
+                    Text(quote.map { $0.currency.format($0.price) } ?? "--")
+                        .monospacedDigit()
+                        .help(quote.map { String(format: L("alerts.priceUpdated"), $0.timestamp.formatted(date: .abbreviated, time: .standard)) } ?? L("alerts.noQuote"))
                 }
                 TableColumn(L("col.condition", comment: "")) { (a: Alert) in
                     Text(conditionText(a))
@@ -102,6 +109,7 @@ struct AlertsPane: View {
 
     private func reload() {
         alerts = (try? container?.alertsRepo.all()) ?? []
+        refresher.refreshNow()
     }
 
     private func testNotification() {
@@ -418,6 +426,7 @@ private struct AlertEditorSheet: View {
 
         do {
             try container?.alertsRepo.upsert(alert)
+            container?.refresher.refreshNow()
             onSaved()
         } catch {
             self.error = "\(error)"

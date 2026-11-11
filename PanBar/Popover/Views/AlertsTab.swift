@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AlertsTab: View {
     @Environment(\.container) private var container
+    @EnvironmentObject private var refresher: QuoteRefresher
     @State private var alerts: [Alert] = []
     @State private var observationTask: Task<Void, Never>?
 
@@ -13,6 +14,7 @@ struct AlertsTab: View {
                 } else {
                     ForEach(alerts) { alert in
                         AlertRow(alert: alert,
+                                 quote: refresher.quotes[alert.symbol],
                                  onToggle: { toggle(alert) },
                                  onDelete: { delete(alert) })
                         Divider().opacity(0.4)
@@ -73,6 +75,7 @@ struct AlertsTab: View {
 
 private struct AlertRow: View {
     let alert: Alert
+    let quote: Quote?
     let onToggle: () -> Void
     let onDelete: () -> Void
 
@@ -87,6 +90,10 @@ private struct AlertRow: View {
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(alert.isActive ? .primary : .secondary)
                 }
+                Text("\(L("alerts.currentPrice")) \(quote.map { $0.currency.format($0.price) } ?? "--")")
+                    .font(.system(size: 12, weight: .medium))
+                    .monospacedDigit()
+                    .help(quote.map { String(format: L("alerts.priceUpdated"), $0.timestamp.formatted(date: .abbreviated, time: .standard)) } ?? L("alerts.noQuote"))
                 Text(conditionText)
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)

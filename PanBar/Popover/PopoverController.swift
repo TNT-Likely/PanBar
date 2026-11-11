@@ -11,7 +11,7 @@ final class PopoverController {
     private let tickerPrefs: TickerPreferences
     private let container: DependencyContainer
     private let minimumPopoverWidth: CGFloat = 360
-    private let popoverHeight: CGFloat = 520
+    private let popoverHeight: CGFloat = 480
     private let metricsGridWidth: CGFloat = 104
     /// 监听 popover 之外的点击,关 popover。`.transient` 行为对菜单栏 popover 有时漏
     /// (尤其是点系统菜单栏 / 通知 / 其它 app 时),这里多加一层保险。
@@ -35,7 +35,8 @@ final class PopoverController {
             refresher: refresher,
             holdingsRepo: holdingsRepo,
             watchlistRepo: watchlistRepo,
-            settingsRepo: settingsRepo
+            settingsRepo: settingsRepo,
+            groupsRepo: container.groupsRepo
         )
         self.holdingsRepo = holdingsRepo
         self.appearancePrefs = appearancePrefs
@@ -44,7 +45,7 @@ final class PopoverController {
 
         let popover = NSPopover()
         popover.behavior = .transient
-        popover.contentSize = NSSize(width: 360, height: 520)
+        popover.contentSize = NSSize(width: minimumPopoverWidth, height: popoverHeight)
         popover.contentViewController = NSHostingController(rootView:
             PopoverRoot()
                 .environmentObject(viewModel)
@@ -52,7 +53,7 @@ final class PopoverController {
                 .environmentObject(appearancePrefs)
                 .environmentObject(tickerPrefs)
                 .environment(\.container, container)  // 修复:之前没注入,导致 IndicesTab 拿不到 indexService
-                .frame(width: 360, height: 520)
+                .frame(width: minimumPopoverWidth, height: popoverHeight)
         )
         self.popover = popover
 
@@ -83,6 +84,7 @@ final class PopoverController {
     }
 
     func show(relativeTo view: NSView, anchorWidth: CGFloat? = nil) {
+        viewModel.reload()
         let width = preferredPopoverWidth(screen: view.window?.screen)
         applyContentWidth(width)
         refresher.setPopoverOpen(true)

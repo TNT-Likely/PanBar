@@ -9,6 +9,7 @@ private struct HoldingRecord: Codable, FetchableRecord, PersistableRecord {
     var code: String
     var market: String
     var name: String
+    var groupID: String?
     var quantity: String
     var costPrice: String
     var currency: String
@@ -33,7 +34,8 @@ private struct HoldingRecord: Codable, FetchableRecord, PersistableRecord {
             note: note,
             inTicker: inTicker,
             sortOrder: sortOrder,
-            createdAt: createdAt
+            createdAt: createdAt,
+            groupID: groupID.flatMap(UUID.init(uuidString:))
         )
     }
 
@@ -43,6 +45,7 @@ private struct HoldingRecord: Codable, FetchableRecord, PersistableRecord {
             code: h.symbol.code,
             market: h.symbol.market.rawValue,
             name: h.name,
+            groupID: h.groupID?.uuidString,
             quantity: "\(h.quantity)",
             costPrice: "\(h.costPrice)",
             currency: h.currency.rawValue,

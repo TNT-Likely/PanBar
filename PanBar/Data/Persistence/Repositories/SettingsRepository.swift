@@ -70,6 +70,11 @@ struct SettingsRepository {
         static let hideOnScreenShare = "hide_on_screen_share"
         static let privacyManualHide = "privacy_manual_hide"
         static let tickerIndexIDs = "ticker_index_ids"
+        static let popoverIndexOrder = "popover_index_order"
+
+        static func ungroupedPosition(_ kind: PortfolioGroupKind) -> String {
+            "ungrouped_position_\(kind.rawValue)"
+        }
         static let fxRefreshInterval = "fx_refresh_interval"   // seconds; 0 = off
         static let quoteRefreshInterval = "quote_refresh_interval"  // seconds during open hours
         static let marketOverrideA = "market_override_a"

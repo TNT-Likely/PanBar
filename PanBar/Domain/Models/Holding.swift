@@ -4,6 +4,7 @@ struct Holding: Equatable, Codable, Sendable, Identifiable {
     let id: UUID
     var symbol: SymbolID
     var name: String
+    var groupID: UUID?
     var quantity: Decimal
     var costPrice: Decimal
     var currency: Currency
@@ -22,11 +23,13 @@ struct Holding: Equatable, Codable, Sendable, Identifiable {
         note: String? = nil,
         inTicker: Bool = true,
         sortOrder: Int = 0,
-        createdAt: Date = Date()
+        createdAt: Date = Date(),
+        groupID: UUID? = nil
     ) {
         self.id = id
         self.symbol = symbol
         self.name = name
+        self.groupID = groupID
         self.quantity = quantity
         self.costPrice = costPrice
         self.currency = currency ?? symbol.market.defaultCurrency

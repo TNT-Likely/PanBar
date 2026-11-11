@@ -3,6 +3,9 @@ import SwiftUI
 struct WatchlistPane: View {
     @Environment(\.container) private var container
     @State private var items: [WatchItem] = []
+    @EnvironmentObject private var navigation: SettingsNavigation
+    @State private var groups: [PortfolioGroup] = []
+    @State private var showGroups = false
     @State private var showAdd: Bool = false
     @State private var editing: WatchItem?
     @State private var deleting: WatchItem?
@@ -26,6 +29,7 @@ struct WatchlistPane: View {
                     Label(L("action.add", comment: ""), systemImage: "plus")
                 }
             }
+            Button(L("groups.manage")) { showGroups = true }
             watchlistList
             if items.isEmpty {
                 Text(L("watchlist.empty", comment: ""))
@@ -35,12 +39,10 @@ struct WatchlistPane: View {
             }
         }
         .padding(20)
-        .onAppear {
-            reload()
-            if SettingsWindowController.pendingAction == .addWatch {
-                SettingsWindowController.pendingAction = nil
-                showAdd = true
-            }
+        .onAppear { reload(); handlePendingAction() }
+        .onChange(of: navigation.pendingAction) { _ in handlePendingAction() }
+        .sheet(isPresented: $showGroups, onDismiss: reload) {
+            PortfolioGroupsSheet(kind: .watchlist)
         }
         .sheet(isPresented: $showAdd) {
             WatchEditorSheet(initial: nil, onSaved: {
@@ -74,7 +76,17 @@ struct WatchlistPane: View {
         }
     }
 
+    private func handlePendingAction() {
+        switch navigation.pendingAction {
+        case .addWatch: showAdd = true
+        case .manageWatchGroups: showGroups = true
+        default: return
+        }
+        navigation.pendingAction = nil
+    }
+
     private func reload() {
+        groups = ((try? container?.groupsRepo.all()) ?? []).filter { $0.kind == .watchlist }
         items = (try? container?.watchlistRepo.all()) ?? []
     }
 
@@ -123,10 +135,12 @@ struct WatchlistPane: View {
                 .help(L("action.dragToReorder", comment: ""))
             Text(w.symbol.market == .us ? w.symbol.code.uppercased() : w.symbol.code)
                 .frame(width: 80, alignment: .leading)
-            Text(w.name)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(minWidth: 100, maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(w.name).lineLimit(1).truncationMode(.tail)
+                Text(groups.first { $0.id == w.groupID }?.name ?? L("groups.ungrouped"))
+                    .font(.caption).foregroundColor(.secondary).lineLimit(1)
+            }
+            .frame(minWidth: 100, maxWidth: .infinity, alignment: .leading)
             Text(w.symbol.market.displayName)
                 .frame(width: 56, alignment: .leading)
                 .foregroundColor(.secondary)
@@ -218,6 +232,8 @@ private struct WatchEditorSheet: View {
     @State private var market: Market = .a
     @State private var code: String = ""
     @State private var name: String = ""
+    @State private var groupID: UUID?
+    @State private var groups: [PortfolioGroup] = []
     @State private var error: String?
 
     @StateObject private var searchVM = SymbolSearchViewModel()
@@ -234,6 +250,10 @@ private struct WatchEditorSheet: View {
             })
 
             Form {
+                Picker(L("groups.group"), selection: $groupID) {
+                    Text(L("groups.ungrouped")).tag(nil as UUID?)
+                    ForEach(groups) { group in Text(group.name).tag(Optional(group.id)) }
+                }
                 Picker(L("col.market", comment: ""), selection: $market) {
                     ForEach(Market.allCases, id: \.self) { m in
                         Text(m.displayName).tag(m)
@@ -256,6 +276,7 @@ private struct WatchEditorSheet: View {
         .padding(24)
         .frame(width: 460)
         .onAppear {
+            groups = ((try? container?.groupsRepo.all()) ?? []).filter { $0.kind == .watchlist }
             prefill()
             searchVM.bind(container?.symbolSearch)
         }
@@ -266,6 +287,7 @@ private struct WatchEditorSheet: View {
         market = w.symbol.market
         code = w.symbol.code
         name = w.name
+        groupID = w.groupID
     }
 
     private func save() {
@@ -274,11 +296,12 @@ private struct WatchEditorSheet: View {
         let sid = SymbolID(code: trimmed, market: market)
         let item: WatchItem
         if var existing = initial {
+            existing.groupID = groupID
             existing.symbol = sid
             existing.name = name.isEmpty ? trimmed : name
             item = existing
         } else {
-            item = WatchItem(symbol: sid, name: name.isEmpty ? trimmed : name)
+            item = WatchItem(symbol: sid, name: name.isEmpty ? trimmed : name, groupID: groupID)
         }
         do {
             try container?.watchlistRepo.upsert(item)

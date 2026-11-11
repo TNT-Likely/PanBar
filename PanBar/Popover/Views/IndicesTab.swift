@@ -11,8 +11,11 @@ struct IndicesTab: View {
                 if refresher.indexQuotes.isEmpty {
                     emptyState
                 } else {
-                    ForEach(refresher.indexQuotes) { q in
+                    ForEach(vm.orderedIndexQuotes(refresher.indexQuotes)) { q in
                         IndexRow(quote: q, scheme: prefs.colorScheme)
+                            .modifier(PopoverReorder(item: .init(kind: .index, id: q.id), title: q.descriptor.displayName) { source, after in
+                                vm.moveIndex(source, to: q.id, after: after)
+                            })
                             .contextMenu {
                                 Button(L("action.openInBrowser", comment: "")) {
                                     openInBrowser(q.descriptor)

@@ -46,6 +46,9 @@ private struct PortfolioColumnWidths {
 struct PortfolioPane: View {
     @Environment(\.container) private var container
     @State private var holdings: [Holding] = []
+    @EnvironmentObject private var navigation: SettingsNavigation
+    @State private var groups: [PortfolioGroup] = []
+    @State private var showGroups = false
     @State private var showAdd: Bool = false
     @State private var editing: Holding?
     @State private var deleting: Holding?
@@ -70,6 +73,7 @@ struct PortfolioPane: View {
                 }
             }
 
+            Button(L("groups.manage")) { showGroups = true }
             holdingsList
 
             if holdings.isEmpty {
@@ -80,20 +84,10 @@ struct PortfolioPane: View {
             }
         }
         .padding(20)
-        .onAppear {
-            reload()
-            switch SettingsWindowController.pendingAction {
-            case .addHolding:
-                SettingsWindowController.pendingAction = nil
-                showAdd = true
-            case .editHolding(let id):
-                SettingsWindowController.pendingAction = nil
-                if let h = holdings.first(where: { $0.id == id }) {
-                    editing = h
-                }
-            default:
-                break
-            }
+        .onAppear { reload(); handlePendingAction() }
+        .onChange(of: navigation.pendingAction) { _ in handlePendingAction() }
+        .sheet(isPresented: $showGroups, onDismiss: reload) {
+            PortfolioGroupsSheet(kind: .holdings)
         }
         .sheet(isPresented: $showAdd) {
             HoldingEditorSheet(initial: nil, onSaved: {
@@ -127,7 +121,22 @@ struct PortfolioPane: View {
         }
     }
 
+    private func handlePendingAction() {
+        switch navigation.pendingAction {
+        case .addHolding:
+            showAdd = true
+        case .editHolding(let id):
+            editing = holdings.first { $0.id == id }
+        case .manageHoldingGroups:
+            showGroups = true
+        default:
+            return
+        }
+        navigation.pendingAction = nil
+    }
+
     private func reload() {
+        groups = ((try? container?.groupsRepo.all()) ?? []).filter { $0.kind == .holdings }
         holdings = (try? container?.holdingsRepo.all()) ?? []
     }
 
@@ -194,10 +203,12 @@ struct PortfolioPane: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
                 .frame(width: columns.symbol, alignment: .leading)
-            Text(h.name)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(width: columns.name, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(h.name).lineLimit(1).truncationMode(.tail)
+                Text(groups.first { $0.id == h.groupID }?.name ?? L("groups.ungrouped"))
+                    .font(.caption).foregroundColor(.secondary).lineLimit(1)
+            }
+            .frame(width: columns.name, alignment: .leading)
             Text(h.symbol.market.displayName)
                 .lineLimit(1)
                 .frame(width: columns.market, alignment: .leading)
@@ -313,6 +324,8 @@ private struct HoldingEditorSheet: View {
     @State private var market: Market = .a
     @State private var code: String = ""
     @State private var name: String = ""
+    @State private var groupID: UUID?
+    @State private var groups: [PortfolioGroup] = []
     @State private var quantity: String = ""
     @State private var costPrice: String = ""
     @State private var error: String?
@@ -331,6 +344,10 @@ private struct HoldingEditorSheet: View {
             })
 
             Form {
+                Picker(L("groups.group"), selection: $groupID) {
+                    Text(L("groups.ungrouped")).tag(nil as UUID?)
+                    ForEach(groups) { group in Text(group.name).tag(Optional(group.id)) }
+                }
                 Picker(L("col.market", comment: ""), selection: $market) {
                     ForEach(Market.allCases, id: \.self) { m in
                         Text(m.displayName).tag(m)
@@ -360,6 +377,7 @@ private struct HoldingEditorSheet: View {
         .padding(24)
         .frame(width: 460)
         .onAppear {
+            groups = ((try? container?.groupsRepo.all()) ?? []).filter { $0.kind == .holdings }
             prefill()
             searchVM.bind(container?.symbolSearch)
         }
@@ -370,6 +388,7 @@ private struct HoldingEditorSheet: View {
         market = h.symbol.market
         code = h.symbol.code
         name = h.name
+        groupID = h.groupID
         quantity = "\(h.quantity)"
         costPrice = "\(h.costPrice)"
     }
@@ -385,6 +404,7 @@ private struct HoldingEditorSheet: View {
         let sid = SymbolID(code: code.trimmingCharacters(in: .whitespaces), market: market)
         let holding: Holding
         if var existing = initial {
+            existing.groupID = groupID
             existing.symbol = sid
             existing.name = name.isEmpty ? code : name
             existing.quantity = qty
@@ -396,7 +416,8 @@ private struct HoldingEditorSheet: View {
                 symbol: sid,
                 name: name.isEmpty ? code : name,
                 quantity: qty,
-                costPrice: cost
+                costPrice: cost,
+                groupID: groupID
             )
         }
         do {

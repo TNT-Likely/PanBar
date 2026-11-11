@@ -8,53 +8,91 @@ struct WatchlistTab: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    if vm.watchlist.isEmpty {
-                        emptyState
-                    } else {
-                        ForEach(vm.watchlist) { item in
-                            WatchRow(item: item, quote: refresher.quotes[item.symbol], density: appearance.density, scheme: prefs.colorScheme)
-                                .contextMenu {
-                                    Button(L("action.openInBrowser", comment: "")) {
-                                        openInBrowser(item.symbol)
-                                    }
-                                    Divider()
-                                    Button(L("action.delete", comment: ""), role: .destructive) {
-                                        vm.deleteWatchItem(item.id)
-                                    }
-                                }
-                                .onTapGesture(count: 2) {
-                                    openInBrowser(item.symbol)
-                                }
-                            Divider().opacity(0.4)
+            let groups = vm.groups.filter { $0.kind == .watchlist }
+            if vm.watchlist.isEmpty && groups.isEmpty {
+                emptyState
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(vm.groupIDs(for: .watchlist), id: \.self) { id in
+                            groupSection(id, name: groups.first { $0.id == id }?.name ?? L("groups.ungrouped"))
                         }
                     }
                 }
+                .frame(maxHeight: .infinity)
             }
-            .frame(maxHeight: 290)
-
-            if !vm.watchlist.isEmpty {
+            ZStack(alignment: .trailing) {
                 Button(action: openAddSheet) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus.circle.fill")
-                        Text(L("watchlist.quickAdd", comment: ""))
-                    }
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.accentColor)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .contentShape(Rectangle())
+                    Label(L("watchlist.quickAdd"), systemImage: "plus.circle.fill")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 32)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-                .background(
-                    VStack(spacing: 0) {
-                        Divider().opacity(0.4)
-                        Spacer()
-                    }
-                )
+                Button {
+                    SettingsWindowController.shared.show(initialAction: .manageWatchGroups)
+                } label: {
+                    Text(L("groups.manage"))
+                        .padding(.horizontal, 8)
+                        .frame(height: 32)
+                        .contentShape(Rectangle())
+                }
+            }
+            .frame(height: 32)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundColor(.accentColor)
+            .buttonStyle(.plain)
+            .overlay(alignment: .top) {
+                Divider().opacity(0.4)
             }
         }
+    }
+
+    @ViewBuilder
+    private func groupSection(_ groupID: UUID?, name: String) -> some View {
+        let items = vm.watchlist.filter { $0.groupID == groupID }
+        let expanded = vm.isExpanded(groupID, kind: .watchlist)
+        Button { vm.toggleGroup(groupID, kind: .watchlist) } label: {
+            HStack(spacing: 8) {
+                Image(systemName: expanded ? "chevron.down" : "chevron.right").frame(width: 10)
+                Text(name).fontWeight(.semibold).lineLimit(1)
+                Text("(\(items.count))").foregroundColor(.secondary)
+                Spacer()
+            }
+            .font(.system(size: 12))
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityValue(L(expanded ? "groups.expanded" : "groups.collapsed"))
+        .modifier(PopoverReorder(item: .group(groupID, kind: .watchlist), title: name) { source, after in
+            vm.moveGroup(source, to: groupID, kind: .watchlist, after: after)
+        })
+        if expanded {
+            if items.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "star").font(.system(size: 24))
+                    Text(L("groups.emptyItems")).font(.system(size: 12))
+                }
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity)
+                .frame(height: 120)
+            } else {
+                ForEach(items) { item in
+                    WatchRow(item: item, quote: refresher.quotes[item.symbol], density: appearance.density, scheme: prefs.colorScheme)
+                        .modifier(PopoverReorder(item: .init(kind: .watch, id: item.id.uuidString), title: item.name) { source, after in
+                            vm.moveWatchItem(source, to: item.id, after: after)
+                        })
+                        .contextMenu {
+                            Button(L("action.openInBrowser")) { openInBrowser(item.symbol) }
+                            Divider()
+                            Button(L("action.delete"), role: .destructive) { vm.deleteWatchItem(item.id) }
+                        }
+                        .onTapGesture(count: 2) { openInBrowser(item.symbol) }
+                    Divider().opacity(0.4)
+                }
+            }
+        }
+        Divider().opacity(0.4)
     }
 
     private func openAddSheet() {
@@ -81,8 +119,7 @@ struct WatchlistTab: View {
             }
             .controlSize(.small)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

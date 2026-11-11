@@ -104,6 +104,23 @@ enum Migrations {
             }
         }
 
+        migrator.registerMigration("v7_portfolio_groups") { db in
+            try db.create(table: "portfolioGroup") { t in
+                t.column("id", .text).primaryKey()
+                t.column("name", .text).notNull()
+                t.column("kind", .text).notNull()
+                t.column("sortOrder", .integer).notNull().defaults(to: 0)
+                t.uniqueKey(["kind", "name"])
+            }
+            // nil 表示未分组；删除组合只清除归属，保留原有持仓和自选。
+            for table in ["holding", "watchItem"] {
+                try db.alter(table: table) { t in
+                    t.add(column: "groupID", .text)
+                        .references("portfolioGroup", onDelete: .setNull)
+                }
+            }
+        }
+
         try migrator.migrate(dbPool)
     }
 }

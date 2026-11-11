@@ -8,6 +8,7 @@ private struct WatchRecord: Codable, FetchableRecord, PersistableRecord {
     var code: String
     var market: String
     var name: String
+    var groupID: String?
     var order: Int
     var inTicker: Bool
     var createdAt: Date
@@ -21,7 +22,8 @@ private struct WatchRecord: Codable, FetchableRecord, PersistableRecord {
             name: name,
             order: order,
             inTicker: inTicker,
-            createdAt: createdAt
+            createdAt: createdAt,
+            groupID: groupID.flatMap(UUID.init(uuidString:))
         )
     }
 
@@ -31,6 +33,7 @@ private struct WatchRecord: Codable, FetchableRecord, PersistableRecord {
             code: w.symbol.code,
             market: w.symbol.market.rawValue,
             name: w.name,
+            groupID: w.groupID?.uuidString,
             order: w.order,
             inTicker: w.inTicker,
             createdAt: w.createdAt
