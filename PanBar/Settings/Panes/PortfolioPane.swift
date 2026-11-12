@@ -315,116 +315,78 @@ struct PortfolioPane: View {
     }
 }
 
-private struct HoldingEditorSheet: View {
+@MainActor
+struct HoldingEditorSheet: View {
     @Environment(\.container) private var container
-    let initial: Holding?
+    @StateObject private var draft: HoldingEditorDraft
+    @State private var groups: [PortfolioGroup] = []
+    private let embedded: Bool
     var onSaved: () -> Void
     var onCancel: () -> Void
 
-    @State private var market: Market = .a
-    @State private var code: String = ""
-    @State private var name: String = ""
-    @State private var groupID: UUID?
-    @State private var groups: [PortfolioGroup] = []
-    @State private var quantity: String = ""
-    @State private var costPrice: String = ""
-    @State private var error: String?
-
-    @StateObject private var searchVM = SymbolSearchViewModel()
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(initial == nil ? L("holdings.addTitle", comment: "") : L("holdings.editTitle", comment: ""))
-                .font(.title3)
-
-            SymbolSearchField(vm: searchVM, onPick: { result in
-                market = result.symbol.market
-                code = result.symbol.code
-                name = result.name
-            })
-
-            Form {
-                Picker(L("groups.group"), selection: $groupID) {
-                    Text(L("groups.ungrouped")).tag(nil as UUID?)
-                    ForEach(groups) { group in Text(group.name).tag(Optional(group.id)) }
-                }
-                Picker(L("col.market", comment: ""), selection: $market) {
-                    ForEach(Market.allCases, id: \.self) { m in
-                        Text(m.displayName).tag(m)
-                    }
-                }
-                TextField(L("col.symbol", comment: ""), text: $code)
-                    .textFieldStyle(.roundedBorder)
-                TextField(L("col.name", comment: ""), text: $name)
-                    .textFieldStyle(.roundedBorder)
-                TextField(L("col.qty", comment: ""), text: $quantity)
-                    .textFieldStyle(.roundedBorder)
-                TextField(L("col.cost", comment: ""), text: $costPrice)
-                    .textFieldStyle(.roundedBorder)
-            }
-
-            if let error = error {
-                Text(error).foregroundColor(.red).font(.caption)
-            }
-
-            HStack {
-                Spacer()
-                Button(L("action.cancel", comment: ""), action: onCancel)
-                Button(L("action.save", comment: ""), action: save)
-                    .keyboardShortcut(.defaultAction)
-            }
-        }
-        .padding(24)
-        .frame(width: 460)
-        .onAppear {
-            groups = ((try? container?.groupsRepo.all()) ?? []).filter { $0.kind == .holdings }
-            prefill()
-            searchVM.bind(container?.symbolSearch)
-        }
+    init(initial: Holding? = nil, draft: HoldingEditorDraft? = nil, embedded: Bool = false,
+         onSaved: @escaping () -> Void, onCancel: @escaping () -> Void) {
+        _draft = StateObject(wrappedValue: draft ?? HoldingEditorDraft(initial: initial))
+        self.embedded = embedded
+        self.onSaved = onSaved
+        self.onCancel = onCancel
     }
 
-    private func prefill() {
-        guard let h = initial else { return }
-        market = h.symbol.market
-        code = h.symbol.code
-        name = h.name
-        groupID = h.groupID
-        quantity = "\(h.quantity)"
-        costPrice = "\(h.costPrice)"
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L(draft.id == nil ? "holdings.addTitle" : "holdings.editTitle"))
+                .font(.title3)
+                .padding(.horizontal, 14)
+                .padding(.top, 12)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    if !embedded || draft.id == nil {
+                        SymbolSearchField(vm: draft.searchVM, onPick: draft.pick)
+                    }
+                    Form {
+                        Picker(L("groups.group"), selection: $draft.groupID) {
+                            Text(L("groups.ungrouped")).tag(nil as UUID?)
+                            ForEach(groups) { group in Text(group.name).tag(Optional(group.id)) }
+                        }
+                        Picker(L("col.market"), selection: $draft.market) {
+                            ForEach(Market.allCases, id: \.self) { Text($0.displayName).tag($0) }
+                        }
+                        TextField(L("col.symbol"), text: $draft.code).textFieldStyle(.roundedBorder)
+                        TextField(L("col.name"), text: $draft.name).textFieldStyle(.roundedBorder)
+                        TextField(L("col.qty"), text: $draft.quantity).textFieldStyle(.roundedBorder)
+                        TextField(L("col.cost"), text: $draft.costPrice).textFieldStyle(.roundedBorder)
+                    }
+                }
+                .padding(14)
+            }
+            Divider()
+            VStack(alignment: .leading, spacing: 8) {
+                if let error = draft.error {
+                    Text(error).foregroundColor(.red).font(.caption).lineLimit(3).help(error)
+                }
+                HStack {
+                    Spacer()
+                    Button(L("action.cancel"), action: onCancel)
+                    Button(L("action.save"), action: save).keyboardShortcut(.defaultAction)
+                }
+            }
+            .padding(12)
+        }
+        .frame(width: embedded ? nil : 460, height: embedded ? nil : 430)
+        .onAppear {
+            groups = ((try? container?.groupsRepo.all()) ?? []).filter { $0.kind == .holdings }
+            draft.searchVM.bind(container?.symbolSearch)
+        }
     }
 
     private func save() {
-        guard !code.isEmpty else { error = L("error.codeRequired", comment: ""); return }
-        guard let qty = Decimal(string: quantity.trimmingCharacters(in: .whitespaces)), qty > 0 else {
-            error = L("error.qtyInvalid", comment: ""); return
-        }
-        guard let cost = Decimal(string: costPrice.trimmingCharacters(in: .whitespaces)), cost > 0 else {
-            error = L("error.costInvalid", comment: ""); return
-        }
-        let sid = SymbolID(code: code.trimmingCharacters(in: .whitespaces), market: market)
-        let holding: Holding
-        if var existing = initial {
-            existing.groupID = groupID
-            existing.symbol = sid
-            existing.name = name.isEmpty ? code : name
-            existing.quantity = qty
-            existing.costPrice = cost
-            existing.currency = sid.market.defaultCurrency
-            holding = existing
-        } else {
-            holding = Holding(
-                symbol: sid,
-                name: name.isEmpty ? code : name,
-                quantity: qty,
-                costPrice: cost,
-                groupID: groupID
-            )
-        }
         do {
-            try container?.holdingsRepo.upsert(holding)
+            guard let container else { throw EditorError("editor.unavailable") }
+            try draft.save(to: container.holdingsRepo, groups: container.groupsRepo)
+            draft.error = nil
             onSaved()
         } catch {
-            self.error = "\(error)"
+            draft.error = error.localizedDescription
         }
     }
 }

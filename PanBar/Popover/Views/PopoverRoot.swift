@@ -184,11 +184,33 @@ struct PopoverRoot: View {
 
     @ViewBuilder
     private var content: some View {
-        switch vm.currentTab {
-        case .holdings:  HoldingsTab()
-        case .watchlist: WatchlistTab()
-        case .indices:   IndicesTab()
-        case .alerts:    AlertsTab()
+        if let editor = vm.editors[vm.currentTab] {
+            editorContent(editor, tab: vm.currentTab)
+        } else {
+            switch vm.currentTab {
+            case .holdings:  HoldingsTab()
+            case .watchlist: WatchlistTab()
+            case .indices:   IndicesTab()
+            case .alerts:    AlertsTab()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func editorContent(_ editor: PopoverViewModel.Editor, tab: PopoverViewModel.Tab) -> some View {
+        switch editor {
+        case .watch(let draft):
+            WatchEditorSheet(draft: draft, embedded: true, onSaved: {
+                vm.finishEditor(in: tab)
+            }, onCancel: { vm.cancelEditor(in: tab) })
+        case .holding(let draft):
+            HoldingEditorSheet(draft: draft, embedded: true, onSaved: {
+                vm.finishEditor(in: tab)
+            }, onCancel: { vm.cancelEditor(in: tab) })
+        case .alert(let draft):
+            AlertEditorSheet(draft: draft, embedded: true, symbols: vm.alertSymbols, onSaved: {
+                vm.finishEditor(in: tab)
+            }, onCancel: { vm.cancelEditor(in: tab) })
         }
     }
 

@@ -35,6 +35,7 @@ final class PopoverController {
             refresher: refresher,
             holdingsRepo: holdingsRepo,
             watchlistRepo: watchlistRepo,
+            alertsRepo: container.alertsRepo,
             settingsRepo: settingsRepo,
             groupsRepo: container.groupsRepo
         )
@@ -78,6 +79,7 @@ final class PopoverController {
     }
 
     private func handlePopoverClosed() {
+        viewModel.itemDrag.cancel()
         stopOutsideClickMonitor()
         refresher.setPopoverOpen(false)
         onClose?()
@@ -127,7 +129,7 @@ final class PopoverController {
         let titleWidth = textWidth(displayCode(holding.symbol), size: 11, weight: .regular)
             + 4
             + textWidth(holding.name, size: 12, weight: .semibold)
-            + 14
+            + 34
         let detailWidth = textWidth(detailText(for: holding), size: 10, weight: .regular)
         let leftWidth = max(titleWidth, detailWidth)
         let metricsWidth = max(metricsGridWidth, estimatedMetricsGridWidth(holding: holding, quote: quote, position: position))
@@ -244,6 +246,7 @@ final class PopoverController {
     }
 
     func close() {
+        viewModel.itemDrag.cancel()
         stopOutsideClickMonitor()
         popover.performClose(nil)
         refresher.setPopoverOpen(false)

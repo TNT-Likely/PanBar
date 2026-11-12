@@ -30,11 +30,13 @@ final class SymbolSearchViewModel: ObservableObject {
             guard let service = self.service else { self.loading = false; return }
             do {
                 let hits = try await service.search(trimmed)
+                guard !Task.isCancelled else { return }
                 await MainActor.run {
                     self.results = hits
                     self.loading = false
                 }
             } catch {
+                guard !Task.isCancelled else { return }
                 await MainActor.run {
                     self.results = []
                     self.loading = false
@@ -48,24 +50,20 @@ struct SymbolSearchField: View {
     @ObservedObject var vm: SymbolSearchViewModel
     var onPick: (SymbolSearchResult) -> Void
 
-    @State private var localQuery: String = ""
-
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
-                TextField(L("search.placeholder", comment: ""), text: $localQuery)
+                TextField(L("search.placeholder", comment: ""), text: Binding(
+                    get: { vm.query }, set: { vm.updateQuery($0) }
+                ))
                     .textFieldStyle(.plain)
-                    .onChange(of: localQuery) { value in
-                        vm.updateQuery(value)
-                    }
                 if vm.loading {
                     ProgressView()
                         .controlSize(.small)
-                } else if !localQuery.isEmpty {
+                } else if !vm.query.isEmpty {
                     Button {
-                        localQuery = ""
                         vm.updateQuery("")
                     } label: {
                         Image(systemName: "xmark.circle.fill")
@@ -85,7 +83,6 @@ struct SymbolSearchField: View {
                         ForEach(vm.results) { result in
                             Button {
                                 onPick(result)
-                                localQuery = ""
                                 vm.updateQuery("")
                             } label: {
                                 HStack {
@@ -117,7 +114,7 @@ struct SymbolSearchField: View {
                 .frame(maxHeight: 180)
                 .background(Color.primary.opacity(0.03))
                 .clipShape(RoundedRectangle(cornerRadius: 6))
-            } else if !localQuery.isEmpty && !vm.loading {
+            } else if !vm.query.isEmpty && !vm.loading {
                 Text(L("search.noResults", comment: ""))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)

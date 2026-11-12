@@ -71,6 +71,7 @@ struct SettingsRepository {
         static let privacyManualHide = "privacy_manual_hide"
         static let tickerIndexIDs = "ticker_index_ids"
         static let popoverIndexOrder = "popover_index_order"
+        static let popoverAlertOrder = "popover_alert_order"
 
         static func ungroupedPosition(_ kind: PortfolioGroupKind) -> String {
             "ungrouped_position_\(kind.rawValue)"

@@ -12,17 +12,23 @@ struct WatchlistTab: View {
             if vm.watchlist.isEmpty && groups.isEmpty {
                 emptyState
             } else {
-                ScrollView {
+                PopoverReorderList(drag: vm.itemDrag, kind: .watch, items: vm.watchlist, groupID: \.groupID,
+                                   groups: vm.groupIDs(for: .watchlist, includingEmptyUngrouped: true), onDrop: { source, target in
+                    vm.moveWatchItem(source, toGroup: target.groupID, before: target.beforeID.flatMap(UUID.init(uuidString:)))
+                }) { drag in
                     LazyVStack(spacing: 0) {
-                        ForEach(vm.groupIDs(for: .watchlist), id: \.self) { id in
-                            groupSection(id, name: groups.first { $0.id == id }?.name ?? L("groups.ungrouped"))
+                        ForEach(vm.groupIDs(for: .watchlist, includingEmptyUngrouped: drag.active != nil), id: \.self) { id in
+                            groupSection(id, name: groups.first { $0.id == id }?.name ?? L("groups.ungrouped"), drag: drag)
                         }
                     }
+                } preview: { item in
+                    WatchRow(item: item, quote: refresher.quotes[item.symbol], density: appearance.density,
+                             scheme: prefs.colorScheme)
                 }
                 .frame(maxHeight: .infinity)
             }
             ZStack(alignment: .trailing) {
-                Button(action: openAddSheet) {
+                Button(action: openAddEditor) {
                     Label(L("watchlist.quickAdd"), systemImage: "plus.circle.fill")
                         .frame(maxWidth: .infinity)
                         .frame(height: 32)
@@ -48,9 +54,9 @@ struct WatchlistTab: View {
     }
 
     @ViewBuilder
-    private func groupSection(_ groupID: UUID?, name: String) -> some View {
+    private func groupSection(_ groupID: UUID?, name: String, drag: PopoverItemDrag) -> some View {
         let items = vm.watchlist.filter { $0.groupID == groupID }
-        let expanded = vm.isExpanded(groupID, kind: .watchlist)
+        let expanded = vm.isExpanded(groupID, kind: .watchlist) || (groupID == nil && items.isEmpty && drag.active != nil)
         Button { vm.toggleGroup(groupID, kind: .watchlist) } label: {
             HStack(spacing: 8) {
                 Image(systemName: expanded ? "chevron.down" : "chevron.right").frame(width: 10)
@@ -67,6 +73,7 @@ struct WatchlistTab: View {
         .modifier(PopoverReorder(item: .group(groupID, kind: .watchlist), title: name) { source, after in
             vm.moveGroup(source, to: groupID, kind: .watchlist, after: after)
         })
+        .modifier(PopoverDropRegion(target: .group(groupID)))
         if expanded {
             if items.isEmpty {
                 VStack(spacing: 8) {
@@ -76,27 +83,38 @@ struct WatchlistTab: View {
                 .foregroundColor(.secondary)
                 .frame(maxWidth: .infinity)
                 .frame(height: 120)
+                .modifier(PopoverDropRegion(target: .empty(groupID)))
             } else {
                 ForEach(items) { item in
-                    WatchRow(item: item, quote: refresher.quotes[item.symbol], density: appearance.density, scheme: prefs.colorScheme)
-                        .modifier(PopoverReorder(item: .init(kind: .watch, id: item.id.uuidString), title: item.name) { source, after in
-                            vm.moveWatchItem(source, to: item.id, after: after)
-                        })
+                    PopoverDropPlaceholder(groupID: groupID, beforeID: item.id.uuidString)
+                    VStack(spacing: 0) {
+                        WatchRow(item: item, quote: refresher.quotes[item.symbol], density: appearance.density,
+                                 scheme: prefs.colorScheme)
                         .contextMenu {
+                            Button(L("alerts.addTitle")) { addAlert(item) }
                             Button(L("action.openInBrowser")) { openInBrowser(item.symbol) }
                             Divider()
                             Button(L("action.delete"), role: .destructive) { vm.deleteWatchItem(item.id) }
                         }
                         .onTapGesture(count: 2) { openInBrowser(item.symbol) }
-                    Divider().opacity(0.4)
+                        Divider().opacity(0.4)
+                    }
+                    .modifier(PopoverItemReorder(id: item.id.uuidString, groupID: groupID))
                 }
+                PopoverDropPlaceholder(groupID: groupID, beforeID: nil)
             }
+        } else {
+            PopoverDropPlaceholder(groupID: groupID, beforeID: nil)
         }
         Divider().opacity(0.4)
     }
 
-    private func openAddSheet() {
-        SettingsWindowController.shared.show(initialAction: .addWatch)
+    private func openAddEditor() {
+        vm.openWatchEditor()
+    }
+
+    private func addAlert(_ item: WatchItem) {
+        vm.openAlertEditor(symbol: SymbolSearchResult(symbol: item.symbol, name: item.name))
     }
 
     private func openInBrowser(_ symbol: SymbolID) {
@@ -115,7 +133,7 @@ struct WatchlistTab: View {
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
             Button(L("watchlist.quickAdd", comment: "")) {
-                openAddSheet()
+                openAddEditor()
             }
             .controlSize(.small)
         }

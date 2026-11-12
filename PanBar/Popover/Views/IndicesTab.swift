@@ -6,28 +6,35 @@ struct IndicesTab: View {
     @EnvironmentObject var vm: PopoverViewModel   // 拿 settingsRepo 读浏览器模板
 
     var body: some View {
-        ScrollView {
+        PopoverReorderList(drag: vm.itemDrag, kind: .index, items: vm.orderedIndexQuotes(refresher.indexQuotes),
+                           groupID: nil, groups: [nil], onDrop: { source, target in
+            vm.moveIndex(source, before: target.beforeID)
+        }) { _ in
             LazyVStack(spacing: 0) {
                 if refresher.indexQuotes.isEmpty {
                     emptyState
                 } else {
                     ForEach(vm.orderedIndexQuotes(refresher.indexQuotes)) { q in
-                        IndexRow(quote: q, scheme: prefs.colorScheme)
-                            .modifier(PopoverReorder(item: .init(kind: .index, id: q.id), title: q.descriptor.displayName) { source, after in
-                                vm.moveIndex(source, to: q.id, after: after)
-                            })
-                            .contextMenu {
-                                Button(L("action.openInBrowser", comment: "")) {
+                        PopoverDropPlaceholder(groupID: nil, beforeID: q.id)
+                        VStack(spacing: 0) {
+                            IndexRow(quote: q, scheme: prefs.colorScheme)
+                                .contextMenu {
+                                    Button(L("action.openInBrowser", comment: "")) {
+                                        openInBrowser(q.descriptor)
+                                    }
+                                }
+                                .onTapGesture(count: 2) {
                                     openInBrowser(q.descriptor)
                                 }
-                            }
-                            .onTapGesture(count: 2) {
-                                openInBrowser(q.descriptor)
-                            }
-                        Divider().opacity(0.4)
+                            Divider().opacity(0.4)
+                        }
+                        .modifier(PopoverItemReorder(id: q.id, groupID: nil))
                     }
+                    PopoverDropPlaceholder(groupID: nil, beforeID: nil)
                 }
             }
+        } preview: { quote in
+            IndexRow(quote: quote, scheme: prefs.colorScheme)
         }
         .frame(maxHeight: 320)
     }

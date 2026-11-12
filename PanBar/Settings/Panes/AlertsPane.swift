@@ -3,7 +3,7 @@ import SwiftUI
 struct AlertsPane: View {
     @Environment(\.container) private var container
     @EnvironmentObject private var refresher: QuoteRefresher
-    @ObservedObject private var notificationService = NotificationService.shared
+    @EnvironmentObject private var navigation: SettingsNavigation
     @State private var alerts: [Alert] = []
     @State private var showAdd: Bool = false
     @State private var editing: Alert?
@@ -23,7 +23,7 @@ struct AlertsPane: View {
                 }
             }
 
-            permissionBanner
+            AlertPermissionBanner()
 
             Table(alerts, selection: $selection) {
                 TableColumn(L("col.symbol", comment: "")) { (a: Alert) in
@@ -38,7 +38,7 @@ struct AlertsPane: View {
                         .help(quote.map { String(format: L("alerts.priceUpdated"), $0.timestamp.formatted(date: .abbreviated, time: .standard)) } ?? L("alerts.noQuote"))
                 }
                 TableColumn(L("col.condition", comment: "")) { (a: Alert) in
-                    Text(conditionText(a))
+                    Text(a.conditionText)
                         .contentShape(Rectangle())
                         .onTapGesture(count: 2) { editing = a }
                 }
@@ -86,11 +86,9 @@ struct AlertsPane: View {
         .padding(20)
         .onAppear {
             reload()
-            if SettingsWindowController.pendingAction == .addAlert {
-                SettingsWindowController.pendingAction = nil
-                showAdd = true
-            }
+            handlePendingAction()
         }
+        .onChange(of: navigation.pendingAction) { _ in handlePendingAction() }
         .sheet(isPresented: $showAdd) {
             AlertEditorSheet(initial: nil) {
                 showAdd = false
@@ -99,12 +97,19 @@ struct AlertsPane: View {
                 showAdd = false
             }
         }
-        .sheet(item: $editing) { existing in
+        .sheet(item: $editing, onDismiss: handlePendingAction) { existing in
             AlertEditorSheet(initial: existing) {
                 editing = nil
                 reload()
             } onCancel: { editing = nil }
         }
+    }
+
+    private func handlePendingAction() {
+        // 等现有编辑弹窗关闭后再添加，避免打断未保存的编辑。
+        guard navigation.pendingAction == .addAlert, editing == nil else { return }
+        navigation.pendingAction = nil
+        showAdd = true
     }
 
     private func reload() {
@@ -115,28 +120,13 @@ struct AlertsPane: View {
     private func testNotification() {
         NotificationService.shared.sendTest()
     }
+}
 
-    private func conditionText(_ a: Alert) -> String {
-        var s = describe(cond: a.condition, threshold: a.threshold, market: a.symbol.market)
-        if let sc = a.secondaryCondition, let st = a.secondaryThreshold {
-            s += " " + (a.conditionLogic == .and ? "&" : "|") + " "
-            s += describe(cond: sc, threshold: st, market: a.symbol.market)
-        }
-        return s
-    }
-
-    private func describe(cond: AlertCondition, threshold: Decimal, market: Market) -> String {
-        let v: String
-        if cond.isPercent {
-            v = String(format: "%+.2f%%", (threshold as NSDecimalNumber).doubleValue * 100)
-        } else {
-            v = market.defaultCurrency.format(threshold)
-        }
-        return "\(cond.displayName) \(v)"
-    }
+struct AlertPermissionBanner: View {
+    @ObservedObject private var notificationService = NotificationService.shared
 
     @ViewBuilder
-    private var permissionBanner: some View {
+    var body: some View {
         let status = notificationService.authorizationStatus
         if status == .denied {
             HStack(alignment: .top, spacing: 8) {
@@ -179,160 +169,223 @@ struct AlertsPane: View {
     }
 }
 
-// MARK: - 编辑 sheet
-
-private struct AlertEditorSheet: View {
+@MainActor
+struct AlertEditorSheet: View {
     @Environment(\.container) private var container
-    let initial: Alert?
+    @StateObject private var draft: AlertEditorDraft
+    private let embedded: Bool
+    private let symbols: [SymbolSearchResult]
     var onSaved: () -> Void
     var onCancel: () -> Void
 
-    @State private var market: Market = .a
-    @State private var code: String = ""
-    @State private var name: String = ""
-    @State private var condition: AlertCondition = .priceAbove
-    @State private var thresholdText: String = ""
-
-    // 副条件
-    @State private var hasSecondary: Bool = false
-    @State private var secondaryCondition: AlertCondition = .changePctAbove
-    @State private var secondaryThresholdText: String = ""
-    @State private var conditionLogic: ConditionLogic = .and
-
-    // 频率 / 时间
-    @State private var cooldownText: String = "300"
-    @State private var hasDailyCap: Bool = false
-    @State private var dailyCapText: String = "3"
-    @State private var tradingHoursOnly: Bool = false
-    @State private var weekdaysOnly: Bool = false
-    @State private var showAdvanced: Bool = false
-
-    @State private var error: String?
-    @StateObject private var searchVM = SymbolSearchViewModel()
+    init(initial: Alert? = nil, symbol: SymbolSearchResult? = nil, draft: AlertEditorDraft? = nil,
+         embedded: Bool = false, symbols: [SymbolSearchResult] = [],
+         onSaved: @escaping () -> Void, onCancel: @escaping () -> Void) {
+        _draft = StateObject(wrappedValue: draft ?? AlertEditorDraft(initial: initial, symbol: symbol))
+        self.embedded = embedded
+        self.symbols = symbols
+        self.onSaved = onSaved
+        self.onCancel = onCancel
+    }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(initial == nil ? L("alerts.addTitle", comment: "") : L("alerts.editTitle", comment: ""))
-                    .font(.title3)
-
-                SymbolSearchField(vm: searchVM, onPick: { result in
-                    market = result.symbol.market
-                    code = result.symbol.code
-                    name = result.name
-                })
-
-                basicSection
-                primaryConditionSection
-                secondaryConditionSection
-                advancedDisclosure
-
-                if let error = error {
-                    Text(error).foregroundColor(.red).font(.caption)
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L(draft.id == nil ? "alerts.addTitle" : "alerts.editTitle"))
+                .font(embedded ? .system(size: 13, weight: .semibold) : .title3)
+                .padding(.horizontal, 14)
+                .padding(.top, 12)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    if embedded { AlertPermissionBanner() }
+                    if embedded && draft.usesPortfolioSymbols {
+                        portfolioSection
+                    } else {
+                        SymbolSearchField(vm: draft.searchVM, onPick: draft.pick)
+                        basicSection
+                    }
+                    primaryConditionSection
+                    secondaryConditionSection
+                    advancedDisclosure
                 }
-
+                .frame(maxWidth: embedded ? .infinity : nil, alignment: .leading)
+                .padding(14)
+                .font(embedded ? .system(size: 12) : nil)
+                .controlSize(embedded ? .small : .regular)
+            }
+            .frame(maxHeight: embedded ? .infinity : nil)
+            Divider()
+            VStack(alignment: .leading, spacing: 8) {
+                if let error = draft.error {
+                    Text(error).foregroundColor(.red).font(.caption).lineLimit(3).help(error)
+                }
                 HStack {
                     Spacer()
-                    Button(L("action.cancel", comment: ""), action: onCancel)
-                    Button(L("action.save", comment: ""), action: save)
-                        .keyboardShortcut(.defaultAction)
+                    Button(L("action.cancel"), action: onCancel)
+                    Button(L("action.save"), action: save).keyboardShortcut(.defaultAction)
+                        .disabled(embedded && !draft.canSave(symbols: symbols))
                 }
             }
-            .padding(24)
+            .padding(12)
         }
-        .frame(width: 520, height: 620)
-        .onAppear {
-            prefill()
-            searchVM.bind(container?.symbolSearch)
+        .frame(maxWidth: embedded ? .infinity : nil, maxHeight: embedded ? .infinity : nil, alignment: .topLeading)
+        .frame(width: embedded ? nil : 520, height: embedded ? nil : 620)
+        .onAppear { draft.searchVM.bind(container?.symbolSearch) }
+    }
+
+    private var portfolioSection: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L("alerts.portfolioTitle"))
+                    .font(.system(size: 12, weight: .semibold))
+                if symbols.isEmpty {
+                    Text(L("alerts.portfolioEmpty"))
+                        .foregroundColor(.secondary)
+                } else {
+                    Picker(L("alerts.portfolioTitle"), selection: Binding(
+                        get: { symbols.first { $0.symbol.storageKey == draft.selectedSymbolKey }?.symbol.storageKey },
+                        set: { key in draft.selectSymbol(symbols.first { $0.symbol.storageKey == key }) }
+                    )) {
+                        Text(L("alerts.choosePortfolio")).tag(nil as String?)
+                        ForEach(symbols) { item in
+                            Text("\(item.name) · \(item.symbol.market == .us ? item.symbol.code.uppercased() : item.symbol.code) · \(item.symbol.market.displayName)")
+                                .tag(Optional(item.symbol.storageKey))
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity)
+                }
+                Button(L("alerts.otherSymbol")) {
+                    SettingsWindowController.shared.show(initialAction: .addAlert)
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.accentColor)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
     private var basicSection: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 8) {
-                Picker(L("col.market", comment: ""), selection: $market) {
+                Picker(L("col.market", comment: ""), selection: $draft.market) {
                     ForEach(Market.allCases, id: \.self) { Text($0.displayName).tag($0) }
                 }
-                TextField(L("col.symbol", comment: ""), text: $code).textFieldStyle(.roundedBorder)
-                TextField(L("col.name", comment: ""), text: $name).textFieldStyle(.roundedBorder)
+                TextField(L("col.symbol", comment: ""), text: $draft.code).textFieldStyle(.roundedBorder)
+                TextField(L("col.name", comment: ""), text: $draft.name).textFieldStyle(.roundedBorder)
             }
+            .frame(maxWidth: embedded ? .infinity : nil, alignment: .leading)
         }
     }
 
     private var primaryConditionSection: some View {
         GroupBox(label: Text(L("alerts.primary", comment: "")).font(.system(size: 12, weight: .semibold))) {
             VStack(alignment: .leading, spacing: 8) {
-                Picker(L("col.condition", comment: ""), selection: $condition) {
+                Picker(L("col.condition", comment: ""), selection: $draft.condition) {
                     ForEach(AlertCondition.allCases, id: \.self) { Text($0.displayName).tag($0) }
                 }
-                TextField(thresholdLabel(condition), text: $thresholdText).textFieldStyle(.roundedBorder)
+                TextField(thresholdLabel(draft.condition), text: $draft.thresholdText).textFieldStyle(.roundedBorder)
             }
+            .frame(maxWidth: embedded ? .infinity : nil, alignment: .leading)
         }
     }
 
+    @ViewBuilder
     private var secondaryConditionSection: some View {
-        GroupBox(label:
-            HStack {
-                Text(L("alerts.secondary", comment: "")).font(.system(size: 12, weight: .semibold))
-                Spacer()
-                Toggle(L("alerts.secondary.enable", comment: ""), isOn: $hasSecondary)
-                    .toggleStyle(.switch)
-                    .controlSize(.mini)
-            }
-        ) {
-            if hasSecondary {
+        if embedded {
+            GroupBox {
                 VStack(alignment: .leading, spacing: 8) {
-                    Picker(L("alerts.logic", comment: ""), selection: $conditionLogic) {
-                        ForEach(ConditionLogic.allCases, id: \.self) { Text($0.displayName).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                    Picker(L("col.condition", comment: ""), selection: $secondaryCondition) {
-                        ForEach(AlertCondition.allCases, id: \.self) { Text($0.displayName).tag($0) }
-                    }
-                    TextField(thresholdLabel(secondaryCondition), text: $secondaryThresholdText).textFieldStyle(.roundedBorder)
+                    secondaryHeader
+                    secondaryFields
                 }
-            } else {
-                Text(L("alerts.secondary.disabled", comment: ""))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else {
+            GroupBox(label: secondaryHeader) { secondaryFields }
+        }
+    }
+
+    private var secondaryHeader: some View {
+        HStack {
+            Text(L("alerts.secondary", comment: "")).font(.system(size: 12, weight: .semibold))
+            Spacer()
+            Toggle(L("alerts.secondary.enable", comment: ""), isOn: $draft.hasSecondary)
+                .toggleStyle(.switch)
+                .controlSize(.mini)
+        }
+    }
+
+    @ViewBuilder
+    private var secondaryFields: some View {
+        if draft.hasSecondary {
+            VStack(alignment: .leading, spacing: 8) {
+                Picker(L("alerts.logic", comment: ""), selection: $draft.conditionLogic) {
+                    ForEach(ConditionLogic.allCases, id: \.self) { Text($0.displayName).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                Picker(L("col.condition", comment: ""), selection: $draft.secondaryCondition) {
+                    ForEach(AlertCondition.allCases, id: \.self) { Text($0.displayName).tag($0) }
+                }
+                TextField(thresholdLabel(draft.secondaryCondition), text: $draft.secondaryThresholdText).textFieldStyle(.roundedBorder)
+            }
+        } else {
+            Text(L("alerts.secondary.disabled", comment: ""))
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private var advancedDisclosure: some View {
+        if embedded {
+            VStack(alignment: .leading, spacing: 8) {
+                advancedButton
+                if draft.showAdvanced {
+                    GroupBox {
+                        advancedFields.frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+            }
+        } else {
+            GroupBox(label: advancedButton) {
+                if draft.showAdvanced { advancedFields }
             }
         }
     }
 
-    private var advancedDisclosure: some View {
-        GroupBox(label:
-            Button(action: { withAnimation { showAdvanced.toggle() } }) {
-                HStack {
-                    Image(systemName: showAdvanced ? "chevron.down" : "chevron.right")
-                    Text(L("alerts.advanced", comment: "")).font(.system(size: 12, weight: .semibold))
-                    Spacer()
-                }
-                .contentShape(Rectangle())
+    private var advancedButton: some View {
+        Button(action: { withAnimation { draft.showAdvanced.toggle() } }) {
+            HStack {
+                Image(systemName: draft.showAdvanced ? "chevron.down" : "chevron.right")
+                Text(L("alerts.advanced", comment: "")).font(.system(size: 12, weight: .semibold))
+                Spacer()
             }
-            .buttonStyle(.plain)
-        ) {
-            if showAdvanced {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text(L("alerts.cooldown", comment: ""))
-                        Spacer()
-                        TextField("", text: $cooldownText).textFieldStyle(.roundedBorder).frame(width: 80)
-                    }
-                    HStack {
-                        Toggle(L("alerts.dailyCap", comment: ""), isOn: $hasDailyCap)
-                        Spacer()
-                        TextField("", text: $dailyCapText)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 60)
-                            .disabled(!hasDailyCap)
-                    }
-                    Toggle(L("alerts.tradingHoursOnly", comment: ""), isOn: $tradingHoursOnly)
-                    Toggle(L("alerts.weekdaysOnly", comment: ""), isOn: $weekdaysOnly)
-                    Text(L("alerts.advanced.hint", comment: ""))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var advancedFields: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(L("alerts.cooldown", comment: ""))
+                Spacer()
+                TextField("", text: $draft.cooldownText).textFieldStyle(.roundedBorder).frame(width: 80)
             }
+            HStack {
+                Toggle(L("alerts.dailyCap", comment: ""), isOn: $draft.hasDailyCap)
+                Spacer()
+                TextField("", text: $draft.dailyCapText)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 60)
+                    .disabled(!draft.hasDailyCap)
+            }
+            Toggle(L("alerts.tradingHoursOnly", comment: ""), isOn: $draft.tradingHoursOnly)
+            Toggle(L("alerts.weekdaysOnly", comment: ""), isOn: $draft.weekdaysOnly)
+            Text(L("alerts.advanced.hint", comment: ""))
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
     }
 
@@ -340,96 +393,14 @@ private struct AlertEditorSheet: View {
         cond.isPercent ? L("alerts.thresholdPct", comment: "") : L("alerts.thresholdPrice", comment: "")
     }
 
-    private func prefill() {
-        guard let a = initial else { return }
-        market = a.symbol.market
-        code = a.symbol.code
-        name = a.name
-        condition = a.condition
-        thresholdText = decimalToText(a.threshold, isPercent: a.condition.isPercent)
-
-        if let sc = a.secondaryCondition, let st = a.secondaryThreshold {
-            hasSecondary = true
-            secondaryCondition = sc
-            secondaryThresholdText = decimalToText(st, isPercent: sc.isPercent)
-        }
-        conditionLogic = a.conditionLogic
-
-        cooldownText = "\(a.cooldownSeconds)"
-        if let cap = a.maxTriggersPerDay {
-            hasDailyCap = true
-            dailyCapText = "\(cap)"
-        }
-        tradingHoursOnly = a.tradingHoursOnly
-        weekdaysOnly = a.weekdaysOnly
-    }
-
-    private func decimalToText(_ d: Decimal, isPercent: Bool) -> String {
-        if isPercent {
-            return String(format: "%.2f", (d as NSDecimalNumber).doubleValue * 100)
-        }
-        return "\(d)"
-    }
-
-    private func parseThreshold(_ text: String, isPercent: Bool) -> Decimal? {
-        guard let raw = Decimal(string: text.trimmingCharacters(in: .whitespaces)) else { return nil }
-        return isPercent ? raw / 100 : raw
-    }
-
     private func save() {
-        guard !code.isEmpty else { error = L("error.codeRequired", comment: ""); return }
-        guard let primaryTh = parseThreshold(thresholdText, isPercent: condition.isPercent) else {
-            error = L("error.thresholdInvalid", comment: ""); return
-        }
-        var secCond: AlertCondition? = nil
-        var secTh: Decimal? = nil
-        if hasSecondary {
-            guard let th = parseThreshold(secondaryThresholdText, isPercent: secondaryCondition.isPercent) else {
-                error = L("error.thresholdInvalid", comment: ""); return
-            }
-            secCond = secondaryCondition
-            secTh = th
-        }
-        let cooldown = Int(cooldownText) ?? 300
-        let cap: Int? = hasDailyCap ? Int(dailyCapText) : nil
-
-        let symbol = SymbolID(code: code.trimmingCharacters(in: .whitespaces), market: market)
-        var alert: Alert
-        if let initial = initial {
-            alert = initial
-            alert.symbol = symbol
-            alert.name = name.isEmpty ? code : name
-            alert.condition = condition
-            alert.threshold = primaryTh
-            alert.secondaryCondition = secCond
-            alert.secondaryThreshold = secTh
-            alert.conditionLogic = conditionLogic
-            alert.cooldownSeconds = cooldown
-            alert.maxTriggersPerDay = cap
-            alert.tradingHoursOnly = tradingHoursOnly
-            alert.weekdaysOnly = weekdaysOnly
-        } else {
-            alert = Alert(
-                symbol: symbol,
-                name: name.isEmpty ? code : name,
-                condition: condition,
-                threshold: primaryTh,
-                secondaryCondition: secCond,
-                secondaryThreshold: secTh,
-                conditionLogic: conditionLogic,
-                cooldownSeconds: cooldown,
-                maxTriggersPerDay: cap,
-                tradingHoursOnly: tradingHoursOnly,
-                weekdaysOnly: weekdaysOnly
-            )
-        }
-
         do {
-            try container?.alertsRepo.upsert(alert)
-            container?.refresher.refreshNow()
+            guard let container else { throw EditorError("editor.unavailable") }
+            try draft.save(to: container.alertsRepo, symbols: symbols)
+            draft.error = nil
             onSaved()
         } catch {
-            self.error = "\(error)"
+            draft.error = error.localizedDescription
         }
     }
 }
