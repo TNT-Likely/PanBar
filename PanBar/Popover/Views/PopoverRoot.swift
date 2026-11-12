@@ -4,6 +4,8 @@ struct PopoverRoot: View {
     @EnvironmentObject var vm: PopoverViewModel
     @EnvironmentObject var refresher: QuoteRefresher
     @Environment(\.container) private var container
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var tabSelection
 
     /// 每 30 秒强制重算市场状态(开市/午休/休市切换);用 timer trigger 让 @State 变化触发重渲染
     @State private var statusTick: Date = Date()
@@ -17,11 +19,25 @@ struct PopoverRoot: View {
                 .padding(.bottom, 10)
             tabs
             Divider()
-            content
+            ZStack(alignment: .top) {
+                content
+                    .id(vm.currentTab)
+                    .transition(reduceMotion ? .identity : .opacity)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .clipped()
             Divider()
             footer
         }
         .onReceive(statusTimer) { statusTick = $0 }
+        .alert(L("reorder.errorTitle"), isPresented: Binding(
+            get: { vm.reorderError != nil },
+            set: { if !$0 { vm.reorderError = nil } }
+        )) {
+            Button(L("action.ok")) { vm.reorderError = nil }
+        } message: {
+            Text(vm.reorderError ?? "")
+        }
     }
 
     private var header: some View {
@@ -137,18 +153,28 @@ struct PopoverRoot: View {
     private var tabs: some View {
         HStack(spacing: 4) {
             ForEach(PopoverViewModel.Tab.allCases) { tab in
-                Button(action: { vm.currentTab = tab }) {
+                Button {
+                    guard vm.currentTab != tab else { return }
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+                        vm.currentTab = tab
+                    }
+                } label: {
                     Text(tab.title)
-                        .font(.system(size: 11, weight: vm.currentTab == tab ? .semibold : .regular))
+                        .font(.system(size: 13.2, weight: vm.currentTab == tab ? .semibold : .regular))
                         .foregroundColor(vm.currentTab == tab ? .primary : .secondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(vm.currentTab == tab ? Color.primary.opacity(0.08) : .clear)
-                        )
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background {
+                            if vm.currentTab == tab {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.primary.opacity(0.08))
+                                    .matchedGeometryEffect(id: "selection", in: tabSelection)
+                            }
+                        }
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityAddTraits(vm.currentTab == tab ? .isSelected : [])
             }
             Spacer()
         }
@@ -158,11 +184,33 @@ struct PopoverRoot: View {
 
     @ViewBuilder
     private var content: some View {
-        switch vm.currentTab {
-        case .holdings:  HoldingsTab()
-        case .watchlist: WatchlistTab()
-        case .indices:   IndicesTab()
-        case .alerts:    AlertsTab()
+        if let editor = vm.editors[vm.currentTab] {
+            editorContent(editor, tab: vm.currentTab)
+        } else {
+            switch vm.currentTab {
+            case .holdings:  HoldingsTab()
+            case .watchlist: WatchlistTab()
+            case .indices:   IndicesTab()
+            case .alerts:    AlertsTab()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func editorContent(_ editor: PopoverViewModel.Editor, tab: PopoverViewModel.Tab) -> some View {
+        switch editor {
+        case .watch(let draft):
+            WatchEditorSheet(draft: draft, embedded: true, onSaved: {
+                vm.finishEditor(in: tab)
+            }, onCancel: { vm.cancelEditor(in: tab) })
+        case .holding(let draft):
+            HoldingEditorSheet(draft: draft, embedded: true, onSaved: {
+                vm.finishEditor(in: tab)
+            }, onCancel: { vm.cancelEditor(in: tab) })
+        case .alert(let draft):
+            AlertEditorSheet(draft: draft, embedded: true, symbols: vm.alertSymbols, onSaved: {
+                vm.finishEditor(in: tab)
+            }, onCancel: { vm.cancelEditor(in: tab) })
         }
     }
 

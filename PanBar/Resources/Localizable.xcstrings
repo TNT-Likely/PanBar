@@ -1,6 +1,180 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
+    "alerts.portfolioTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "持仓与自选标的" } }
+      }
+    },
+    "alerts.choosePortfolio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请选择标的" } }
+      }
+    },
+    "alerts.otherSymbol" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加其他标的" } }
+      }
+    },
+    "alerts.portfolioEmpty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无持仓或自选标的" } }
+      }
+    },
+    "editor.groupDeleted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分组已被删除，请重新选择。" } }
+      }
+    },
+    "editor.recordDeleted" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这条记录已被删除，无法保存修改。请取消后重新添加。" } }
+      }
+    },
+    "editor.unavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂时无法保存，请稍后重试。" } }
+      }
+    },
+    "groups.empty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "还没有组合" } }
+      }
+    },
+    "groups.emptyItems" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "本组合暂无标的" } }
+      }
+    },
+    "reorder.errorTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "排序保存失败" } }
+      }
+    },
+    "reorder.errorMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未能保存新的顺序，请重试。" } }
+      }
+    },
+    "groups.group" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "组合" } }
+      }
+    },
+    "groups.manage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "管理组合" } }
+      }
+    },
+    "groups.create" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "新建组合" } }
+      }
+    },
+    "groups.rename" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重命名组合" } }
+      }
+    },
+    "groups.name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "组合名称" } }
+      }
+    },
+    "groups.ungrouped" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未分组" } }
+      }
+    },
+    "groups.nameRequired" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "请输入组合名称" } }
+      }
+    },
+    "groups.duplicateName" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已有同名组合，请使用其他名称" } }
+      }
+    },
+    "groups.deleteTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "删除组合？" } }
+      }
+    },
+    "groups.deleteHint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "删除组合后，其中的股票将移至“未分组”，不会删除股票记录。" } }
+      }
+    },
+    "groups.invalidBackup" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "备份中的组合数据或股票归属无效，未导入。" } }
+      }
+    },
+    "groups.marketValue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "市值" } }
+      }
+    },
+    "groups.expanded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已展开" } }
+      }
+    },
+    "groups.collapsed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已收起" } }
+      }
+    },
+    "alerts.currentPrice" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "现价" } }
+      }
+    },
+    "alerts.priceUpdated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "行情更新时间：%@" } }
+      }
+    },
+    "alerts.noQuote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无行情" } }
+      }
+    },
+    "action.close" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭" } }
+      }
+    },
     "market.a" : {
       "extractionState" : "manual",
       "localizations" : {

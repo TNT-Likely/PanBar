@@ -9,6 +9,7 @@ private struct HoldingRecord: Codable, FetchableRecord, PersistableRecord {
     var code: String
     var market: String
     var name: String
+    var groupID: String?
     var quantity: String
     var costPrice: String
     var currency: String
@@ -33,7 +34,8 @@ private struct HoldingRecord: Codable, FetchableRecord, PersistableRecord {
             note: note,
             inTicker: inTicker,
             sortOrder: sortOrder,
-            createdAt: createdAt
+            createdAt: createdAt,
+            groupID: groupID.flatMap(UUID.init(uuidString:))
         )
     }
 
@@ -43,6 +45,7 @@ private struct HoldingRecord: Codable, FetchableRecord, PersistableRecord {
             code: h.symbol.code,
             market: h.symbol.market.rawValue,
             name: h.name,
+            groupID: h.groupID?.uuidString,
             quantity: "\(h.quantity)",
             costPrice: "\(h.costPrice)",
             currency: h.currency.rawValue,
@@ -72,6 +75,15 @@ struct HoldingsRepository {
         }
     }
 
+    func update(id: UUID, _ changes: (inout Holding) -> Void) throws -> Bool {
+        try dbPool.write { db in
+            guard var holding = try HoldingRecord.fetchOne(db, key: id.uuidString)?.toDomain() else { return false }
+            changes(&holding)
+            try HoldingRecord.from(holding).update(db)
+            return true
+        }
+    }
+
     func delete(id: UUID) throws {
         _ = try dbPool.write { db in
             try HoldingRecord.deleteOne(db, key: id.uuidString)
@@ -94,6 +106,25 @@ struct HoldingsRepository {
                     arguments: [i, id.uuidString]
                 )
             }
+        }
+    }
+
+    func move(id: UUID, toGroup groupID: UUID?, before target: UUID?) throws -> [Holding]? {
+        try dbPool.write { db in
+            if let groupID {
+                guard try Bool.fetchOne(db, sql: "SELECT EXISTS(SELECT 1 FROM portfolioGroup WHERE id = ? AND kind = ?)",
+                                        arguments: [groupID.uuidString, PortfolioGroupKind.holdings.rawValue]) == true else { return nil }
+            }
+            let current = try HoldingRecord.order(Column("sortOrder").asc, Column("createdAt").asc)
+                .fetchAll(db).compactMap { $0.toDomain() }
+            guard let ids = PopoverOrder.movingItem(id, toGroup: groupID, before: target,
+                                                   in: current, groupID: \.groupID) else { return nil }
+            try db.execute(sql: "UPDATE holding SET groupID = ? WHERE id = ?", arguments: [groupID?.uuidString, id.uuidString])
+            for (order, itemID) in ids.enumerated() {
+                try db.execute(sql: "UPDATE holding SET sortOrder = ? WHERE id = ?", arguments: [order, itemID.uuidString])
+            }
+            return try HoldingRecord.order(Column("sortOrder").asc, Column("createdAt").asc)
+                .fetchAll(db).compactMap { $0.toDomain() }
         }
     }
 

@@ -194,7 +194,7 @@ final class StatusItemController {
     /// 把当前 tickerView 渲染到 NSImage 并设给 button。
     private func refreshButtonImage() {
         guard let button = statusItem.button else { return }
-        let image = tickerView.renderImage()
+        let image = tickerView.renderImage(width: lockedPopoverLength)
         button.image = image
         button.imagePosition = .imageOnly
         statusItem.length = lockedPopoverLength ?? tickerView.totalWidth
@@ -202,8 +202,9 @@ final class StatusItemController {
 
     private func lockPopoverLength() {
         guard lockedPopoverLength == nil else { return }
-        lockedPopoverLength = max(40, statusItem.length, tickerView.totalWidth)
-        statusItem.length = lockedPopoverLength ?? tickerView.totalWidth
+        let width = statusItem.button?.bounds.width ?? tickerView.totalWidth
+        lockedPopoverLength = width > 0 ? width : tickerView.totalWidth
+        refreshButtonImage()
     }
 
     private func unlockPopoverLength() {

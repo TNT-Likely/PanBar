@@ -8,6 +8,7 @@ final class DependencyContainer {
     let database: Database
     let holdingsRepo: HoldingsRepository
     let watchlistRepo: WatchlistRepository
+    let groupsRepo: PortfolioGroupsRepository
     let settingsRepo: SettingsRepository
     let alertsRepo: AlertsRepository
     let fxCacheRepo: FXCacheRepository
@@ -33,6 +34,7 @@ final class DependencyContainer {
         self.database = database
         self.holdingsRepo = HoldingsRepository(dbPool: database.dbPool)
         self.watchlistRepo = WatchlistRepository(dbPool: database.dbPool)
+        self.groupsRepo = PortfolioGroupsRepository(dbPool: database.dbPool)
         self.settingsRepo = SettingsRepository(dbPool: database.dbPool)
         self.alertsRepo = AlertsRepository(dbPool: database.dbPool)
         self.fxCacheRepo = FXCacheRepository(dbPool: database.dbPool)
@@ -76,6 +78,7 @@ final class DependencyContainer {
         self.portfolioService = PortfolioService(
             holdingsRepo: holdingsRepo,
             watchlistRepo: watchlistRepo,
+            alertsRepo: alertsRepo,
             settingsRepo: settingsRepo,
             provider: orchestrator,
             fx: fx

@@ -96,6 +96,16 @@ struct AlertsRepository {
         }
     }
 
+    func update(id: UUID, _ changes: (inout Alert) -> Void) throws -> Bool {
+        try dbPool.write { db in
+            // 草稿可能跨越多次触发；在同一事务中读取并更新，保留最新的触发状态。
+            guard var alert = try AlertRecord.fetchOne(db, key: id.uuidString)?.toDomain() else { return false }
+            changes(&alert)
+            try AlertRecord.from(alert).update(db)
+            return true
+        }
+    }
+
     func delete(id: UUID) throws {
         _ = try dbPool.write { db in
             try AlertRecord.deleteOne(db, key: id.uuidString)

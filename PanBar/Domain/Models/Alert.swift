@@ -60,6 +60,20 @@ struct Alert: Equatable, Codable, Sendable, Identifiable {
 
     var createdAt: Date
 
+    var conditionText: String {
+        func describe(_ condition: AlertCondition, _ threshold: Decimal) -> String {
+            let value = condition.isPercent
+                ? String(format: "%+.2f%%", (threshold as NSDecimalNumber).doubleValue * 100)
+                : symbol.market.defaultCurrency.format(threshold)
+            return "\(condition.displayName) \(value)"
+        }
+        var text = describe(condition, threshold)
+        if let secondaryCondition, let secondaryThreshold {
+            text += " \(conditionLogic.displayName) " + describe(secondaryCondition, secondaryThreshold)
+        }
+        return text
+    }
+
     init(
         id: UUID = UUID(),
         symbol: SymbolID,

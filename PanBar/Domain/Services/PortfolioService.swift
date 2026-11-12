@@ -4,6 +4,7 @@ import Foundation
 actor PortfolioService {
     private let holdingsRepo: HoldingsRepository
     private let watchlistRepo: WatchlistRepository
+    private let alertsRepo: AlertsRepository
     private let settingsRepo: SettingsRepository
     private let provider: QuoteProvider
     private let fx: FXService
@@ -11,26 +12,30 @@ actor PortfolioService {
     init(
         holdingsRepo: HoldingsRepository,
         watchlistRepo: WatchlistRepository,
+        alertsRepo: AlertsRepository,
         settingsRepo: SettingsRepository,
         provider: QuoteProvider,
         fx: FXService
     ) {
         self.holdingsRepo = holdingsRepo
         self.watchlistRepo = watchlistRepo
+        self.alertsRepo = alertsRepo
         self.settingsRepo = settingsRepo
         self.provider = provider
         self.fx = fx
     }
 
-    /// 拉取所有持仓 + 自选 → 一次性请求行情 → 构建快照。
+    /// 持仓、自选、预警合并去重后请求行情；只有持仓参与资产汇总。
     func computeSnapshot() async throws -> PortfolioSnapshot {
         let holdings = (try? holdingsRepo.all()) ?? []
         let watchlist = (try? watchlistRepo.all()) ?? []
 
-        // 合并所有 SymbolID(持仓 + 自选),去重后一次拉取
+        // 暂停的预警也需要现价展示，是否触发仍由 AlertEngine 判断。
+        let alerts = (try? alertsRepo.all()) ?? []
         var allSymbols = Set<SymbolID>()
         for h in holdings { allSymbols.insert(h.symbol) }
         for w in watchlist { allSymbols.insert(w.symbol) }
+        for alert in alerts { allSymbols.insert(alert.symbol) }
 
         let quotes: [SymbolID: Quote]
         if allSymbols.isEmpty {

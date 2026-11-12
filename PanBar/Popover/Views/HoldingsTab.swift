@@ -44,85 +44,174 @@ struct HoldingsTab: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    if vm.holdings.isEmpty {
-                        emptyState
-                    } else {
-                        ForEach(vm.holdings) { holding in
-                            // 编辑按钮以 hover 时是否显示的形式传给 HoldingRow,在 name 后面 inline 出现,
-                            // 不再用 ZStack 覆盖右侧(挡住涨跌幅 pill)。
-                            HoldingRow(
-                                holding: holding,
-                                quote: refresher.quotes[holding.symbol],
-                                position: positionsByID[holding.id],
-                                density: appearance.density,
-                                scheme: prefs.colorScheme,
-                                baseCurrency: refresher.snapshot.baseCurrency,
-                                metricsLayout: metricsLayout,
-                                metricMode: holdingPopoverMetric,
-                                showEditButton: hoveredID == holding.id,
-                                onEdit: { openEdit(holding) }
-                            )
-                            .contentShape(Rectangle())
-                            .onHover { hovering in
-                                withAnimation(.easeInOut(duration: 0.12)) {
-                                    hoveredID = hovering ? holding.id : (hoveredID == holding.id ? nil : hoveredID)
-                                }
-                            }
-                            .contextMenu {
-                                Button(L("action.edit", comment: "")) { openEdit(holding) }
-                                Button(L("action.openInBrowser", comment: "")) {
-                                    openInBrowser(holding.symbol)
-                                }
-                                Divider()
-                                Button(L("action.delete", comment: ""), role: .destructive) {
-                                    vm.deleteHolding(holding.id)
-                                }
-                            }
-                            .onTapGesture(count: 2) {
-                                openInBrowser(holding.symbol)
-                            }
-                            Divider().opacity(0.4)
+            let groups = vm.groups.filter { $0.kind == .holdings }
+            if vm.holdings.isEmpty && groups.isEmpty {
+                emptyState
+            } else {
+                PopoverReorderList(drag: vm.itemDrag, kind: .holding, items: vm.holdings, groupID: \.groupID,
+                                   groups: vm.groupIDs(for: .holdings, includingEmptyUngrouped: true), onDrop: { source, target in
+                    vm.moveHolding(source, toGroup: target.groupID, before: target.beforeID.flatMap(UUID.init(uuidString:)))
+                }) { drag in
+                    LazyVStack(spacing: 0) {
+                        ForEach(vm.groupIDs(for: .holdings, includingEmptyUngrouped: drag.active != nil), id: \.self) { id in
+                            groupSection(id, name: groups.first { $0.id == id }?.name ?? L("groups.ungrouped"), drag: drag)
                         }
                     }
+                } preview: { holding in
+                    holdingContent(holding, showEditButton: false)
+                }
+                .frame(maxHeight: .infinity)
+            }
+            ZStack(alignment: .trailing) {
+                quickAddButton
+                Button {
+                    SettingsWindowController.shared.show(initialAction: .manageHoldingGroups)
+                } label: {
+                    Text(L("groups.manage"))
+                        .padding(.horizontal, 8)
+                        .frame(height: 32)
+                        .contentShape(Rectangle())
                 }
             }
-            .frame(maxHeight: 290)
-
-            if !vm.holdings.isEmpty {
-                quickAddButton
+            .frame(height: 32)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundColor(.accentColor)
+            .buttonStyle(.plain)
+            .overlay(alignment: .top) {
+                Divider().opacity(0.4)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func groupSection(_ groupID: UUID?, name: String, drag: PopoverItemDrag) -> some View {
+        let holdings = vm.holdings.filter { $0.groupID == groupID }
+        let positions = holdings.compactMap { positionsByID[$0.id] }
+        let complete = positions.count == holdings.count && positions.allSatisfy {
+            $0.quote != nil && $0.baseMarketValue != nil && $0.baseTodayPnL != nil && $0.basePnL != nil
+        }
+        let value = positions.compactMap(\.baseMarketValue).reduce(Decimal(0), +)
+        let pnl = positions.compactMap { holdingPopoverMetric == .today ? $0.baseTodayPnL : $0.basePnL }.reduce(Decimal(0), +)
+        let currency = refresher.snapshot.baseCurrency
+        let expanded = vm.isExpanded(groupID, kind: .holdings) || (groupID == nil && holdings.isEmpty && drag.active != nil)
+        Button { vm.toggleGroup(groupID, kind: .holdings) } label: {
+            HStack(spacing: 8) {
+                Image(systemName: expanded ? "chevron.down" : "chevron.right").frame(width: 10)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(name).fontWeight(.semibold).lineLimit(1)
+                        Text("(\(holdings.count))").foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text("\(L("groups.marketValue")) \(complete ? currency.format(value) : "--")")
+                        Spacer(minLength: 4)
+                        Text("\(holdingPopoverMetric.displayName) \(complete ? currency.format(pnl) : "--")")
+                            .foregroundColor(!complete ? .secondary : (pnl >= 0 ? SemanticColors.up(scheme: prefs.colorScheme) : SemanticColors.down(scheme: prefs.colorScheme)))
+                    }
+                    .font(.system(size: 10)).monospacedDigit()
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .font(.system(size: 12))
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityValue(L(expanded ? "groups.expanded" : "groups.collapsed"))
+        .modifier(PopoverReorder(item: .group(groupID, kind: .holdings), title: name) { source, after in
+            vm.moveGroup(source, to: groupID, kind: .holdings, after: after)
+        })
+        .modifier(PopoverDropRegion(target: .group(groupID)))
+        if expanded {
+            if holdings.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "tray").font(.system(size: 24))
+                    Text(L("groups.emptyItems")).font(.system(size: 12))
+                }
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity)
+                .frame(height: 120)
+                .modifier(PopoverDropRegion(target: .empty(groupID)))
+            } else {
+                ForEach(holdings) { holding in
+                    PopoverDropPlaceholder(groupID: groupID, beforeID: holding.id.uuidString)
+                    VStack(spacing: 0) {
+                        holdingRow(holding)
+                        Divider().opacity(0.4)
+                    }
+                    .modifier(PopoverItemReorder(id: holding.id.uuidString, groupID: groupID))
+                }
+                PopoverDropPlaceholder(groupID: groupID, beforeID: nil)
+            }
+        } else {
+            PopoverDropPlaceholder(groupID: groupID, beforeID: nil)
+        }
+        Divider().opacity(0.4)
+    }
+
+    private func holdingContent(_ holding: Holding, showEditButton: Bool) -> some View {
+        // 编辑按钮以 hover 时是否显示的形式传给 HoldingRow,在 name 后面 inline 出现,
+        // 不再用 ZStack 覆盖右侧(挡住涨跌幅 pill)。
+        HoldingRow(
+            holding: holding,
+            quote: refresher.quotes[holding.symbol],
+            position: positionsByID[holding.id],
+            density: appearance.density,
+            scheme: prefs.colorScheme,
+            baseCurrency: refresher.snapshot.baseCurrency,
+            metricsLayout: metricsLayout,
+            metricMode: holdingPopoverMetric,
+            showEditButton: showEditButton,
+            onEdit: { openEdit(holding) }
+        )
+    }
+
+    private func holdingRow(_ holding: Holding) -> some View {
+        holdingContent(holding, showEditButton: hoveredID == holding.id)
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.12)) {
+                hoveredID = hovering ? holding.id : (hoveredID == holding.id ? nil : hoveredID)
+            }
+        }
+        .contextMenu {
+            Button(L("action.edit", comment: "")) { openEdit(holding) }
+            Button(L("alerts.addTitle")) { addAlert(holding) }
+            Button(L("action.openInBrowser", comment: "")) {
+                openInBrowser(holding.symbol)
+            }
+            Divider()
+            Button(L("action.delete", comment: ""), role: .destructive) {
+                vm.deleteHolding(holding.id)
+            }
+        }
+        .onTapGesture(count: 2) {
+            openInBrowser(holding.symbol)
         }
     }
 
     private func openEdit(_ holding: Holding) {
-        SettingsWindowController.shared.show(initialAction: .editHolding(holding.id))
+        vm.openHoldingEditor(holding)
+    }
+
+    private func addAlert(_ holding: Holding) {
+        vm.openAlertEditor(symbol: SymbolSearchResult(symbol: holding.symbol, name: holding.name))
     }
 
     private var quickAddButton: some View {
-        Button(action: openAddSheet) {
+        Button(action: openAddEditor) {
             HStack(spacing: 4) {
                 Image(systemName: "plus.circle.fill")
                 Text(L("holdings.quickAdd", comment: ""))
             }
-            .font(.system(size: 11, weight: .medium))
-            .foregroundColor(.accentColor)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            .frame(height: 32)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .background(
-            VStack(spacing: 0) {
-                Divider().opacity(0.4)
-                Spacer()
-            }
-        )
     }
 
-    private func openAddSheet() {
-        SettingsWindowController.shared.show(initialAction: .addHolding)
+    private func openAddEditor() {
+        vm.openHoldingEditor()
     }
 
     private func openInBrowser(_ symbol: SymbolID) {
@@ -141,12 +230,11 @@ struct HoldingsTab: View {
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
             Button(L("holdings.addFirst", comment: "")) {
-                openAddSheet()
+                openAddEditor()
             }
             .controlSize(.small)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func nativePnL(holding: Holding, quote: Quote?) -> Decimal? {

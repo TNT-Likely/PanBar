@@ -3,6 +3,9 @@ import SwiftUI
 struct WatchlistPane: View {
     @Environment(\.container) private var container
     @State private var items: [WatchItem] = []
+    @EnvironmentObject private var navigation: SettingsNavigation
+    @State private var groups: [PortfolioGroup] = []
+    @State private var showGroups = false
     @State private var showAdd: Bool = false
     @State private var editing: WatchItem?
     @State private var deleting: WatchItem?
@@ -26,6 +29,7 @@ struct WatchlistPane: View {
                     Label(L("action.add", comment: ""), systemImage: "plus")
                 }
             }
+            Button(L("groups.manage")) { showGroups = true }
             watchlistList
             if items.isEmpty {
                 Text(L("watchlist.empty", comment: ""))
@@ -35,12 +39,10 @@ struct WatchlistPane: View {
             }
         }
         .padding(20)
-        .onAppear {
-            reload()
-            if SettingsWindowController.pendingAction == .addWatch {
-                SettingsWindowController.pendingAction = nil
-                showAdd = true
-            }
+        .onAppear { reload(); handlePendingAction() }
+        .onChange(of: navigation.pendingAction) { _ in handlePendingAction() }
+        .sheet(isPresented: $showGroups, onDismiss: reload) {
+            PortfolioGroupsSheet(kind: .watchlist)
         }
         .sheet(isPresented: $showAdd) {
             WatchEditorSheet(initial: nil, onSaved: {
@@ -74,7 +76,17 @@ struct WatchlistPane: View {
         }
     }
 
+    private func handlePendingAction() {
+        switch navigation.pendingAction {
+        case .addWatch: showAdd = true
+        case .manageWatchGroups: showGroups = true
+        default: return
+        }
+        navigation.pendingAction = nil
+    }
+
     private func reload() {
+        groups = ((try? container?.groupsRepo.all()) ?? []).filter { $0.kind == .watchlist }
         items = (try? container?.watchlistRepo.all()) ?? []
     }
 
@@ -123,10 +135,12 @@ struct WatchlistPane: View {
                 .help(L("action.dragToReorder", comment: ""))
             Text(w.symbol.market == .us ? w.symbol.code.uppercased() : w.symbol.code)
                 .frame(width: 80, alignment: .leading)
-            Text(w.name)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(minWidth: 100, maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(w.name).lineLimit(1).truncationMode(.tail)
+                Text(groups.first { $0.id == w.groupID }?.name ?? L("groups.ungrouped"))
+                    .font(.caption).foregroundColor(.secondary).lineLimit(1)
+            }
+            .frame(minWidth: 100, maxWidth: .infinity, alignment: .leading)
             Text(w.symbol.market.displayName)
                 .frame(width: 56, alignment: .leading)
                 .foregroundColor(.secondary)
@@ -209,82 +223,74 @@ struct WatchlistPane: View {
     }
 }
 
-private struct WatchEditorSheet: View {
+@MainActor
+struct WatchEditorSheet: View {
     @Environment(\.container) private var container
-    let initial: WatchItem?
+    @StateObject private var draft: WatchEditorDraft
+    @State private var groups: [PortfolioGroup] = []
+    private let embedded: Bool
     var onSaved: () -> Void
     var onCancel: () -> Void
 
-    @State private var market: Market = .a
-    @State private var code: String = ""
-    @State private var name: String = ""
-    @State private var error: String?
-
-    @StateObject private var searchVM = SymbolSearchViewModel()
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(initial == nil ? L("watchlist.addTitle", comment: "") : L("watchlist.editTitle", comment: ""))
-                .font(.title3)
-
-            SymbolSearchField(vm: searchVM, onPick: { result in
-                market = result.symbol.market
-                code = result.symbol.code
-                name = result.name
-            })
-
-            Form {
-                Picker(L("col.market", comment: ""), selection: $market) {
-                    ForEach(Market.allCases, id: \.self) { m in
-                        Text(m.displayName).tag(m)
-                    }
-                }
-                TextField(L("col.symbol", comment: ""), text: $code)
-                    .textFieldStyle(.roundedBorder)
-                TextField(L("col.name", comment: ""), text: $name)
-                    .textFieldStyle(.roundedBorder)
-            }
-            if let error = error {
-                Text(error).foregroundColor(.red).font(.caption)
-            }
-            HStack {
-                Spacer()
-                Button(L("action.cancel", comment: ""), action: onCancel)
-                Button(L("action.save", comment: ""), action: save).keyboardShortcut(.defaultAction)
-            }
-        }
-        .padding(24)
-        .frame(width: 460)
-        .onAppear {
-            prefill()
-            searchVM.bind(container?.symbolSearch)
-        }
+    init(initial: WatchItem? = nil, draft: WatchEditorDraft? = nil, embedded: Bool = false,
+         onSaved: @escaping () -> Void, onCancel: @escaping () -> Void) {
+        _draft = StateObject(wrappedValue: draft ?? WatchEditorDraft(initial: initial))
+        self.embedded = embedded
+        self.onSaved = onSaved
+        self.onCancel = onCancel
     }
 
-    private func prefill() {
-        guard let w = initial else { return }
-        market = w.symbol.market
-        code = w.symbol.code
-        name = w.name
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L(draft.id == nil ? "watchlist.addTitle" : "watchlist.editTitle"))
+                .font(.title3)
+                .padding(.horizontal, 14)
+                .padding(.top, 12)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    SymbolSearchField(vm: draft.searchVM, onPick: draft.pick)
+                    Form {
+                        Picker(L("groups.group"), selection: $draft.groupID) {
+                            Text(L("groups.ungrouped")).tag(nil as UUID?)
+                            ForEach(groups) { group in Text(group.name).tag(Optional(group.id)) }
+                        }
+                        Picker(L("col.market"), selection: $draft.market) {
+                            ForEach(Market.allCases, id: \.self) { Text($0.displayName).tag($0) }
+                        }
+                        TextField(L("col.symbol"), text: $draft.code).textFieldStyle(.roundedBorder)
+                        TextField(L("col.name"), text: $draft.name).textFieldStyle(.roundedBorder)
+                    }
+                }
+                .padding(14)
+            }
+            Divider()
+            VStack(alignment: .leading, spacing: 8) {
+                if let error = draft.error {
+                    Text(error).foregroundColor(.red).font(.caption).lineLimit(3).help(error)
+                }
+                HStack {
+                    Spacer()
+                    Button(L("action.cancel"), action: onCancel)
+                    Button(L("action.save"), action: save).keyboardShortcut(.defaultAction)
+                }
+            }
+            .padding(12)
+        }
+        .frame(width: embedded ? nil : 460, height: embedded ? nil : 370)
+        .onAppear {
+            groups = ((try? container?.groupsRepo.all()) ?? []).filter { $0.kind == .watchlist }
+            draft.searchVM.bind(container?.symbolSearch)
+        }
     }
 
     private func save() {
-        guard !code.isEmpty else { error = L("error.codeRequired", comment: ""); return }
-        let trimmed = code.trimmingCharacters(in: .whitespaces)
-        let sid = SymbolID(code: trimmed, market: market)
-        let item: WatchItem
-        if var existing = initial {
-            existing.symbol = sid
-            existing.name = name.isEmpty ? trimmed : name
-            item = existing
-        } else {
-            item = WatchItem(symbol: sid, name: name.isEmpty ? trimmed : name)
-        }
         do {
-            try container?.watchlistRepo.upsert(item)
+            guard let container else { throw EditorError("editor.unavailable") }
+            try draft.save(to: container.watchlistRepo, groups: container.groupsRepo)
+            draft.error = nil
             onSaved()
         } catch {
-            self.error = "\(error)"
+            draft.error = error.localizedDescription
         }
     }
 }

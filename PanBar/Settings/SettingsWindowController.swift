@@ -24,6 +24,8 @@ final class SettingsWindowController {
         case addWatch
         case addAlert
         case editHolding(UUID)
+        case manageHoldingGroups
+        case manageWatchGroups
     }
 
     /// 兼容旧 API:目标 pane 想用静态属性时仍可写,但 navigation.selectedPane 是真相源。
@@ -63,8 +65,8 @@ final class SettingsWindowController {
 
     private func pane(for action: PendingAction) -> SettingsRootView.Pane {
         switch action {
-        case .addHolding, .editHolding: return .portfolio
-        case .addWatch:                 return .watchlist
+        case .addHolding, .editHolding, .manageHoldingGroups: return .portfolio
+        case .addWatch, .manageWatchGroups: return .watchlist
         case .addAlert:                 return .alerts
         }
     }

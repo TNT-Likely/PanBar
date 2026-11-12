@@ -3,7 +3,7 @@ import AppKit
 /// 所有菜单栏 ticker 视图的公共接口。
 ///
 /// 关键设计:view 不挂到 NSStatusBarButton 的 subview 树里,而是单纯做「渲染器」。
-/// Controller 调 `renderImage()` 拿到 NSImage(isTemplate=false),设给
+/// Controller 调 `renderImage(width:)` 拿到 NSImage(isTemplate=false),设给
 /// `button.image`。这么做是为了绕开 macOS 在菜单栏对「非活跃 app 的 subview」
 /// 自动加 vibrancy 降饱和度滤镜 —— NSImage 走另一条渲染管线,不被这个滤镜影响。
 protocol MenuBarTickerView: NSView {
@@ -19,16 +19,16 @@ protocol MenuBarTickerView: NSView {
     func setPaused(_ paused: Bool)
     /// view 被替换前停止内部动画源,避免旧 display link 的异步回调撞到新模式。
     func invalidateAnimation()
-    /// 把当前状态画进 NSImage。size 跟 totalWidth × 22 一致。
-    func renderImage() -> NSImage
+    /// 打开面板时固定画布宽度，防止图标随新行情居中偏移。
+    func renderImage(width: CGFloat?) -> NSImage
 }
 
 /// 共用的渲染实现:cacheDisplay 强制 view 重画到 bitmap,封装成 NSImage 设 isTemplate=false。
 extension MenuBarTickerView {
-    func defaultRenderImage() -> NSImage {
-        let size = NSSize(width: totalWidth, height: 22)
+    func defaultRenderImage(width: CGFloat?) -> NSImage {
+        let size = NSSize(width: width ?? totalWidth, height: 22)
         let rect = NSRect(origin: .zero, size: size)
-        // 改 frame 让 view bounds 跟 totalWidth 一致(否则 cacheDisplay 的范围不对)
+        // 缓存范围与实际画布一致；锁宽时超出的内容从右侧裁剪。
         if frame.size != size {
             frame = rect
         }
@@ -44,22 +44,22 @@ extension MenuBarTickerView {
 }
 
 extension TickerView: MenuBarTickerView {
-    func renderImage() -> NSImage { defaultRenderImage() }
+    func renderImage(width: CGFloat?) -> NSImage { defaultRenderImage(width: width) }
 }
 
 extension CarouselTickerView: MenuBarTickerView {
-    func renderImage() -> NSImage { defaultRenderImage() }
+    func renderImage(width: CGFloat?) -> NSImage { defaultRenderImage(width: width) }
     func setPaused(_ paused: Bool) { /* hover 状态间接控制 */ }
 }
 
 extension CompactTickerView: MenuBarTickerView {
-    func renderImage() -> NSImage { defaultRenderImage() }
+    func renderImage(width: CGFloat?) -> NSImage { defaultRenderImage(width: width) }
     func setPaused(_ paused: Bool) {}   // 无动画
     func invalidateAnimation() {}
 }
 
 extension MinimalTickerView: MenuBarTickerView {
-    func renderImage() -> NSImage { defaultRenderImage() }
+    func renderImage(width: CGFloat?) -> NSImage { defaultRenderImage(width: width) }
     func setPaused(_ paused: Bool) {}   // 无动画
     func invalidateAnimation() {}
 }
